@@ -1,0 +1,18 @@
+[package]
+name = "tss2_tcti"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name         = "tss2_tcti"
+
+[dependencies]
+log = "0.4.20"
+strum = "0.25.0"
+strum_macros = "0.25.2"
+subenum = "1.0.1"
+thiserror = "1.0.47"
+tss2-tcti-sys = { path = "../tss2-tcti-sys", version = "0.1.0" }
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

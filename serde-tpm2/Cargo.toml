@@ -1,0 +1,16 @@
+[package]
+name = "serde_tpm2"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+
+
+[dependencies]
+log = "0.4.20"
+paste = "1.0.14"
+#serde = { version = "1.0.193", features = ["derive"] }
+serde = { features = ["derive"], path = "../../serde/serde" }
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

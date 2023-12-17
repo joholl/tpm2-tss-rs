@@ -1,0 +1,17 @@
+[package]
+name = "tpm2-tcti-rm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name         = "tpm2_tcti_rm"
+crate-type   = ["lib", "cdylib"]
+
+[dependencies]
+log = "0.4.20"
+thiserror = "1.0.47"
+tss2-tcti-sys = { path = "../tss2-tcti-sys", version = "0.1.0" }
+tss2_tcti = { path = "../tss2-tcti", version = "0.1.0" }
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

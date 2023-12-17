@@ -1,0 +1,6 @@
+[workspace]
+members = ["tss2-tcti", "tss2-tcti-sys", "tss2-tcti-foobar", "tpm2-tcti-rm", "tpm2-types"]
+resolver = "2"
+
+[patch.crates-io]
+serde = { git = 'https://github.com/lg3696/serde' }
