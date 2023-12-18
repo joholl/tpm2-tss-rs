@@ -15,14 +15,7 @@ chrono = "0.4.31"
 env_logger = "0.10.1"
 log = "0.4.20"
 paste = "1.0.14"
-# serde = { version = "1.0.193", features = ["derive"] }
-# serde = { version = "1.0.152", features = ["derive"] }
-serde = { features = ["derive"], path = "../../serde/serde" }
-# serde = { features = ["derive"], git = "https://github.com/LG3696/serde.git" }
+serde = { version = "1.0.152", features = ["derive"], git = "https://github.com/LG3696/serde.git" }
 serde_repr = "0.1.17"
 serde_tpm2 = { path = "../serde-tpm2" }
 subenum = "1.1.1"
-
-
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
