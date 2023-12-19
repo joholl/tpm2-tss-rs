@@ -2,7 +2,11 @@ use std::{
     any,
     collections::HashMap,
     fmt::{self, Display},
+    panic::Location,
+    path::Path,
 };
+
+use project_root::get_project_root;
 
 pub struct Logger {
     /// logging prefix
@@ -49,10 +53,30 @@ impl Logger {
         self.field_names.insert(self.level, fields);
     }
 
+    #[track_caller]
     pub fn log(&self, args: fmt::Arguments) {
-        log::info!("{} {:i$}{}", self.prefix, "", args, i = self.indent());
+        // resolve caller path (can be relative or absolute)
+        let caller_file = Path::new(Location::caller().file());
+        let caller_file = match caller_file.is_relative() {
+            true => caller_file,
+            false => caller_file
+                .strip_prefix(get_project_root().unwrap())
+                .unwrap(),
+        };
+
+        log::info!(
+            "{}:{}:{} - {} {:i$}{}",
+            caller_file.display(),
+            Location::caller().line(),
+            Location::caller().column(),
+            self.prefix,
+            "",
+            args,
+            i = self.indent()
+        );
     }
 
+    #[track_caller]
     pub fn log_primitive<T: Display>(&self, v: T) {
         self.log(format_args!("= {} ({})", v, any::type_name::<T>()));
     }

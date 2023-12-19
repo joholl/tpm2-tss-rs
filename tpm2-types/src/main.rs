@@ -61,22 +61,7 @@ use tpm2_types::{de::StructWithSize, types::*};
 
 // 00180023000b00020072000000100019000b0003001000000000
 fn main() {
-    // [2023-12-04T21:35:00Z INFO  tpm2_types::de]
-    // env_logger::init();
-    env_logger::Builder::new()
-        .format(|buf, record| {
-            writeln!(
-                buf,
-                "[{} {}:{} {}] {}",
-                chrono::Local::now().format("%Y-%m-%dT%H:%M:%S"),
-                record.file().unwrap_or("unknown"),
-                record.line().unwrap_or(0),
-                record.level(),
-                record.args()
-            )
-        })
-        .filter(None, log::LevelFilter::Info)
-        .init();
+    env_logger::init();
 
     let in_public = StructWithSize(Public::ECC {
         name_alg: AlgHash::SHA256,
