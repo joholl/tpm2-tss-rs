@@ -13,9 +13,6 @@ fn main() {
         )
         .header("/home/johannes/persistent/dev-projects/tpm/tpm2-tss/include/tss2/tss2_common.h")
         .header("/home/johannes/persistent/dev-projects/tpm/tpm2-tss/include/tss2/tss2_tctildr.h")
-        .header("/home/johannes/persistent/dev-projects/tpm/tpm2-tss/src/tss2-tcti/tctildr.h")
-        .header("/home/johannes/persistent/dev-projects/tpm/tpm2-tss/src/tss2-tcti/tcti-common.h")
-        //.header(project_dir.join("/home/johannes/persistent/dev-projects/tpm/tpm2-tss/src/tss2-tcti/tctildr.h").to_str().unwrap())
         .clang_args([
             &format!(
                 "-I{}",

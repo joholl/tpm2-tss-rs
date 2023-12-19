@@ -2,6 +2,9 @@
 #[allow(nonstandard_style)]
 pub mod tpm2_tss {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+
+    // specified TCTI API definition (currently: non-public tpm2-tss header)
+    pub const TCTI_VERSION: u32 = 2;
 }
 
 impl Default for tpm2_tss::TSS2_TCTI_CONTEXT_COMMON_V1 {
@@ -24,17 +27,6 @@ impl Default for tpm2_tss::TSS2_TCTI_CONTEXT_COMMON_V2 {
         tpm2_tss::TSS2_TCTI_CONTEXT_COMMON_V2 {
             v1: Default::default(),
             makeSticky: None,
-        }
-    }
-}
-
-impl Default for tpm2_tss::TSS2_TCTILDR_CONTEXT {
-    fn default() -> tpm2_tss::TSS2_TCTILDR_CONTEXT {
-        tpm2_tss::TSS2_TCTILDR_CONTEXT {
-            v2: Default::default(),
-            library_handle: std::ptr::null_mut(),
-            info: std::ptr::null_mut(),
-            tcti: std::ptr::null_mut(),
         }
     }
 }

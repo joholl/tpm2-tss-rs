@@ -1,4 +1,6 @@
 pub mod tcti_loader {
+    use std::ptr::{null, null_mut};
+
     use crate::tcti::{
         error::TctiError,
         tcti::{Api, Tcti},
@@ -12,23 +14,30 @@ pub mod tcti_loader {
     #[repr(C)]
     #[derive(Debug)]
     pub struct TctiLoader {
-        ctx: tpm2_tss::TSS2_TCTILDR_CONTEXT,
+        ctx: Vec<u8>,
     }
 
     impl TctiLoader {
         fn get_api(&self) -> Api {
-            let api_ptr = &self.ctx as *const _ as *const Api;
+            let api_ptr = self.ctx_ptr() as *const _ as *const Api;
             unsafe { std::ptr::read(api_ptr) }
+        }
+
+        fn ctx_ptr(&self) -> *const tpm2_tss::TSS2_TCTI_OPAQUE_CONTEXT_BLOB {
+            self.ctx.as_ptr() as *const _
+        }
+
+        fn ctx_mut_ptr(&mut self) -> *mut tpm2_tss::TSS2_TCTI_OPAQUE_CONTEXT_BLOB {
+            self.ctx.as_mut_ptr() as *mut _
         }
     }
 
     impl Drop for TctiLoader {
         fn drop(&mut self) {
-            let ctx_ptr = &mut self.ctx as *mut _ as *mut tpm2_tss::TSS2_TCTI_OPAQUE_CONTEXT_BLOB;
             let finalize_fn = self.get_api().v1.finalize.unwrap();
 
             unsafe {
-                finalize_fn(ctx_ptr);
+                finalize_fn(self.ctx_mut_ptr());
             }
         }
     }
@@ -55,20 +64,26 @@ pub mod tcti_loader {
         /// assert_eq!(response, b"\x80\x01\x00\x00\x00\x1b\x00\x00\x00\x00\x01\x00\x00\x00\x06\x00\x00\x00\x01\x00\x00\x01\x05\x49\x42\x4d\x00");
         /// ```
         fn new(name_conf: &str) -> Result<Self, TctiError> {
-            let mut ctx: tpm2_tss::TSS2_TCTILDR_CONTEXT = Default::default();
-            let ctx_ptr = &mut ctx as *mut _ as *mut tpm2_tss::TSS2_TCTI_OPAQUE_CONTEXT_BLOB;
             let mut size: usize = 0;
             let name_conf_cstr =
                 std::ffi::CString::new(name_conf).expect("Failed to convert to CString");
 
-            let return_code = unsafe {
-                tpm2_tss::Tss2_Tcti_TctiLdr_Init(ctx_ptr, &mut size, name_conf_cstr.as_ptr())
+            match unsafe { tpm2_tss::Tss2_Tcti_TctiLdr_Init(null_mut(), &mut size, null()) } {
+                0 => (),
+                _ => panic!("Unexpected Error."),
             };
+            let mut tcti_loader = Self { ctx: vec![0; size] };
+
+            let return_code = unsafe {
+                tpm2_tss::Tss2_Tcti_TctiLdr_Init(
+                    tcti_loader.ctx_mut_ptr(),
+                    &mut size,
+                    name_conf_cstr.as_ptr(),
+                )
+            };
+
             let error: TctiError = match return_code {
-                0 => {
-                    let tcti_loader = TctiLoader { ctx };
-                    return Ok(tcti_loader);
-                }
+                0 => return Ok(tcti_loader),
                 0xa001 => TctiError::GeneralFailure,
                 0xa002 => TctiError::NotImplemented,
                 0xa003 => TctiError::BadContext {
@@ -94,9 +109,12 @@ pub mod tcti_loader {
 
         /// Transmit byte array to child tcti
         fn transmit(&mut self, command: &[u8]) -> Result<(), TctiError> {
-            let ctx_ptr = &mut self.ctx as *mut _ as *mut tpm2_tss::TSS2_TCTI_OPAQUE_CONTEXT_BLOB;
             let transmit_fn = self.get_api().v1.transmit.unwrap();
-            let return_code = unsafe { transmit_fn(ctx_ptr, command.len(), command.as_ptr()) };
+
+            println!("{:#?}", self.ctx_ptr());
+
+            let return_code =
+                unsafe { transmit_fn(self.ctx_mut_ptr(), command.len(), command.as_ptr()) };
             let error: TctiError = match return_code {
                 0 => return Ok(()),
                 error_code => error_code
@@ -110,7 +128,6 @@ pub mod tcti_loader {
 
         /// Transmit byte array from child tcti
         fn receive(&mut self) -> Result<Vec<u8>, TctiError> {
-            let ctx_ptr = &mut self.ctx as *mut _ as *mut tpm2_tss::TSS2_TCTI_OPAQUE_CONTEXT_BLOB;
             let receive_fn = self.get_api().v1.receive.unwrap();
 
             let mut size = 0;
@@ -118,7 +135,7 @@ pub mod tcti_loader {
 
             let return_code = unsafe {
                 receive_fn(
-                    ctx_ptr,
+                    self.ctx_mut_ptr(),
                     &mut size as *mut usize,
                     std::ptr::null_mut(),
                     timeout,
@@ -137,7 +154,7 @@ pub mod tcti_loader {
 
             let return_code = unsafe {
                 receive_fn(
-                    ctx_ptr,
+                    self.ctx_mut_ptr(),
                     &mut size as *mut usize,
                     response.as_mut_ptr(),
                     timeout,
@@ -156,9 +173,8 @@ pub mod tcti_loader {
         }
 
         fn cancel(&mut self) -> Result<(), TctiError> {
-            let ctx_ptr = &mut self.ctx as *mut _ as *mut tpm2_tss::TSS2_TCTI_OPAQUE_CONTEXT_BLOB;
             let cancel_fn = self.get_api().v1.cancel.unwrap();
-            let return_code = unsafe { cancel_fn(ctx_ptr) };
+            let return_code = unsafe { cancel_fn(self.ctx_mut_ptr()) };
             let error: TctiError = match return_code {
                 0 => return Ok(()),
                 error_code => error_code.into(),
@@ -169,9 +185,8 @@ pub mod tcti_loader {
         }
 
         fn get_poll_handles(&mut self) -> Result<&[tpm2_tss::TSS2_TCTI_POLL_HANDLE], TctiError> {
-            // let ctx_ptr = &mut self.ctx as *mut _ as *mut tpm2_tss::TSS2_TCTI_OPAQUE_CONTEXT_BLOB;
             // let get_poll_handles_fn = self.get_api().v1.getPollHandles.unwrap();
-            // match unsafe { get_poll_handles_fn(ctx_ptr) } {
+            // match unsafe { get_poll_handles_fn(self.ctx_mut_ptr()) } {
             //     0 => Ok(()),
             //     error_code => Err(error_code),
             // }
@@ -179,9 +194,8 @@ pub mod tcti_loader {
         }
 
         fn set_locality(&mut self, locality: u8) -> Result<(), TctiError> {
-            let ctx_ptr = &mut self.ctx as *mut _ as *mut tpm2_tss::TSS2_TCTI_OPAQUE_CONTEXT_BLOB;
             let set_locality_fn = self.get_api().v1.setLocality.unwrap();
-            let return_code = unsafe { set_locality_fn(ctx_ptr, locality) };
+            let return_code = unsafe { set_locality_fn(self.ctx_mut_ptr(), locality) };
             let error: TctiError = match return_code {
                 0 => return Ok(()),
                 error_code => error_code.into(),
@@ -192,9 +206,8 @@ pub mod tcti_loader {
         }
 
         fn make_sticky(&mut self) -> Result<(), TctiError> {
-            // let ctx_ptr = &mut self.ctx as *mut _ as *mut tpm2_tss::TSS2_TCTI_OPAQUE_CONTEXT_BLOB;
             // let make_sticky_fn = self.get_api().v2.makeSticky.unwrap();
-            // match unsafe { make_sticky_fn(ctx_ptr) } {
+            // match unsafe { make_sticky_fn(self.ctx_mut_ptr()) } {
             //     0 => Ok(()),
             //     error_code => Err(error_code),
             // }
