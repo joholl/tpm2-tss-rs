@@ -1,5 +1,5 @@
 use core::panic;
-use std::{any, collections::HashMap, hash::Hash};
+use std::any;
 
 use serde::{ser, Serialize};
 
@@ -150,7 +150,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     // Serialize a byte array as an array of bytes. Could also use a base64
     // string here. Binary formats will typically represent byte arrays more
     // compactly.
-    fn serialize_bytes(self, v: &[u8]) -> Result<()> {
+    fn serialize_bytes(self, _v: &[u8]) -> Result<()> {
         unimplemented!()
         // use serde::ser::SerializeSeq;
         // self.logger.log(format_args!("&[u8; {}]", v.len()));
@@ -271,12 +271,21 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     // Unit types are serialized to nothing
     fn serialize_unit_variant(
         self,
-        name: &'static str,
+        _name: &'static str,
         _variant_index: u32,
         _variant: &'static str,
     ) -> Result<()> {
+        unimplemented!()
+    }
+
+    fn serialize_unit_variant_repr(
+        self,
+        name: &'static str,
+        _variant_index: u32,
+        variant: ser::EnumReprVariant,
+    ) -> std::prelude::v1::Result<Self::Ok, Self::Error> {
         self.logger.log(format_args!("enum variant: unit {}", name));
-        Ok(())
+        self.serialize_enum_repr_as_int(variant)
     }
 
     // Note that newtype variant (and all of the other variant serialization
@@ -286,16 +295,30 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     // Serialize this to JSON in externally tagged form as `{ NAME: VALUE }`.
     fn serialize_newtype_variant<T>(
         self,
-        name: &'static str,
+        _name: &'static str,
         _variant_index: u32,
         _variant: &'static str,
-        value: &T,
+        _value: &T,
     ) -> Result<()>
     where
         T: ?Sized + Serialize,
     {
+        unimplemented!()
+    }
+
+    fn serialize_newtype_variant_repr<T: ?Sized>(
+        self,
+        name: &'static str,
+        _variant_index: u32,
+        variant: ser::EnumReprVariant,
+        value: &T,
+    ) -> std::prelude::v1::Result<Self::Ok, Self::Error>
+    where
+        T: Serialize,
+    {
         self.logger
             .log(format_args!("enum variant: newtype {}", name));
+        self.serialize_enum_repr_as_int(variant)?;
         value.serialize(&mut *self)
     }
 
@@ -303,28 +326,50 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     // this method is only responsible for the externally tagged representation.
     fn serialize_tuple_variant(
         self,
-        name: &'static str,
+        _name: &'static str,
         _variant_index: u32,
         _variant: &'static str,
-        len: usize,
+        _len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
-        self.logger
-            .log(format_args!("enum variant: tuple {}[{}]", name, len));
-        Ok(self)
+        unimplemented!()
     }
 
+    fn serialize_tuple_variant_repr(
+        self,
+        name: &'static str,
+        _variant_index: u32,
+        variant: ser::EnumReprVariant,
+        len: usize,
+    ) -> std::prelude::v1::Result<Self::SerializeTupleVariant, Self::Error> {
+        self.logger
+            .log(format_args!("enum variant: tuple {}[{}]", name, len));
+        self.logger.level_push();
+        self.serialize_enum_repr_as_int(variant)?;
+        Ok(self)
+    }
     // Struct variants are represented in JSON as `{ NAME: { K: V, ... } }`.
     // This is the externally tagged representation.
     fn serialize_struct_variant(
         self,
-        name: &'static str,
+        _name: &'static str,
         _variant_index: u32,
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
+        unimplemented!()
+    }
+
+    fn serialize_struct_variant_repr(
+        self,
+        name: &'static str,
+        _variant_index: u32,
+        variant: ser::EnumReprVariant,
+        _len: usize,
+    ) -> std::prelude::v1::Result<Self::SerializeStructVariant, Self::Error> {
         self.logger
             .log(format_args!("enum variant: struct {}", name));
         self.logger.level_push();
+        self.serialize_enum_repr_as_int(variant)?;
         Ok(self)
     }
 
@@ -516,7 +561,6 @@ fn test_struct() {
 fn test_enum() {
     #[derive(Serialize, PartialEq, Debug)]
     #[repr(u16)]
-    #[serde(use_repr)]
     enum MyEnum {
         Unit = 0x1122,
         Newtype(u32) = 0x3344,
