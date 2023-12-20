@@ -3,7 +3,8 @@ use crate::log::Logger;
 use error::{Error, Result};
 use paste::paste;
 use serde::de::{
-    self, DeserializeSeed, EnumAccess, IntoDeserializer, SeqAccess, VariantAccess, Visitor,
+    self, DeserializeSeed, EnumAccess, EnumVariantReprs, IntoDeserializer, SeqAccess,
+    VariantAccess, Visitor,
 };
 use serde::Deserialize;
 use std::mem;
@@ -355,11 +356,23 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        unimplemented!()
+    }
+
+    fn deserialize_enum_repr<V>(
+        self,
+        name: &'static str,
+        variants: &'static EnumVariantReprs,
+        visitor: V,
+    ) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
         self.logger.log(format_args!("= enum {}", name));
 
         self.logger.level_push();
-        self.logger.set_field_names(variants);
-        let value = visitor.visit_enum(MyVariantAccess::new(self))?;
+        self.logger.set_field_names(variants.str_variants());
+        let value = visitor.visit_enum(MyVariantAccess::new(self, variants))?;
         self.logger.level_pop();
 
         Ok(value)
@@ -440,11 +453,12 @@ impl<'de, 'a> SeqAccess<'de> for VecElemAccess<'a, 'de> {
 
 struct MyVariantAccess<'a, 'de: 'a> {
     de: &'a mut Deserializer<'de>,
+    variants: &'static EnumVariantReprs,
 }
 
 impl<'a, 'de> MyVariantAccess<'a, 'de> {
-    fn new(de: &'a mut Deserializer<'de>) -> Self {
-        MyVariantAccess { de }
+    fn new(de: &'a mut Deserializer<'de>, variants: &'static EnumVariantReprs) -> Self {
+        MyVariantAccess { de, variants }
     }
 }
 
@@ -457,13 +471,73 @@ impl<'de, 'a> EnumAccess<'de> for MyVariantAccess<'a, 'de> {
     where
         V: DeserializeSeed<'de>,
     {
-        let variant = self.de.parse_u16()?; // TODO what if selector is no u16
-        self.de
-            .logger
-            .log(format_args!("discriminant = {} (u16)", variant));
+        let variant = match self.variants {
+            EnumVariantReprs::U8(vars, _) => {
+                let discriminant = self.de.parse_u8()?;
+                vars.iter()
+                    .position(|v| *v == discriminant)
+                    .ok_or(discriminant as u64)
+            }
+            EnumVariantReprs::U16(vars, _) => {
+                let discriminant = self.de.parse_u16()?;
+                vars.iter()
+                    .position(|v| *v == discriminant)
+                    .ok_or(discriminant as u64)
+            }
+            EnumVariantReprs::U32(vars, _) => {
+                let discriminant = self.de.parse_u32()?;
+                vars.iter()
+                    .position(|v| *v == discriminant)
+                    .ok_or(discriminant as u64)
+            }
+            EnumVariantReprs::U64(vars, _) => {
+                let discriminant = self.de.parse_u64()?;
+                vars.iter()
+                    .position(|v| *v == discriminant)
+                    .ok_or(discriminant as u64)
+            }
+            EnumVariantReprs::I8(vars, _) => {
+                let discriminant = self.de.parse_i8()?;
+                vars.iter()
+                    .position(|v| *v == discriminant)
+                    .ok_or(discriminant as u64)
+            }
+            EnumVariantReprs::I16(vars, _) => {
+                let discriminant = self.de.parse_i16()?;
+                vars.iter()
+                    .position(|v| *v == discriminant)
+                    .ok_or(discriminant as u64)
+            }
+            EnumVariantReprs::I32(vars, _) => {
+                let discriminant = self.de.parse_i32()?;
+                vars.iter()
+                    .position(|v| *v == discriminant)
+                    .ok_or(discriminant as u64)
+            }
+            EnumVariantReprs::I64(vars, _) => {
+                let discriminant = self.de.parse_i64()?;
+                vars.iter()
+                    .position(|v| *v == discriminant)
+                    .ok_or(discriminant as u64)
+            }
+        };
+        match variant {
+            Ok(variant) => {
+                self.de
+                    .logger
+                    .log(format_args!("discriminant = {}", variant));
 
-        let value = seed.deserialize(variant.into_deserializer())?;
-        Ok((value, self))
+                let value = seed.deserialize(variant.into_deserializer())?;
+                Ok((value, self))
+            }
+            Err(discriminant) => {
+                self.de.logger.log(format_args!(
+                    "[ERROR] nvalid discriminant = {}",
+                    discriminant
+                ));
+                Err(Error::ExpectedEnum)
+            }
+        }
     }
 }
 
