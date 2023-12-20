@@ -496,7 +496,6 @@ fn test_struct() {
 fn test_enum() {
     #[derive(Deserialize, PartialEq, Debug)]
     #[repr(u16)]
-    #[serde(use_repr)]
     enum MyEnum {
         Unit = 0x1122,
         Newtype(u32) = 0x3344,
