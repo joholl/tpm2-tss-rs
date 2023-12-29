@@ -1,27 +1,20 @@
-use core::panic;
-use log::{Level, Record};
+use crate::error;
+use crate::log::Logger;
+use error::{Error, Result};
 use paste::paste;
-use std::collections::HashMap;
-use std::fmt::{self, Display};
-use std::marker::PhantomData;
-use std::{any, mem};
-
 use serde::de::{
     self, DeserializeSeed, EnumAccess, IntoDeserializer, MapAccess, SeqAccess, VariantAccess,
     Visitor,
 };
 use serde::Deserialize;
-
-use error::{Error, Result};
-
-use crate::error;
-use crate::log::Logger;
+use std::{any, mem};
 
 /// Starting point: https://serde.rs/impl-deserializer.html
 pub struct Deserializer<'de> {
     // input data, and bytes are truncated off the beginning as data is parsed
     input: &'de [u8],
     logger: Logger,
+    last_u8_u16_or_u32: u32,
 }
 
 impl<'de> Deserializer<'de> {
@@ -29,6 +22,7 @@ impl<'de> Deserializer<'de> {
         Deserializer {
             input,
             logger: Logger::new("deserializing".to_string()),
+            last_u8_u16_or_u32: 0,
         }
     }
 }
@@ -69,12 +63,6 @@ impl<'de> Deserializer<'de> {
     define_parse!(i16);
     define_parse!(i32);
     define_parse!(i64);
-
-    /// Parse byte, 0 is false, everything else is true.
-    fn parse_bool(&mut self) -> Result<bool> {
-        let bool = self.parse_u8()? != 0;
-        Ok(bool)
-    }
 }
 
 impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
@@ -92,7 +80,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let v = self.parse_bool()?;
+        let v = self.parse_u8()? != 0;
         self.logger.log_primitive(v);
         visitor.visit_bool(v)
     }
@@ -139,6 +127,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         let v = self.parse_u8()?;
         self.logger.log_primitive(v);
+        self.last_u8_u16_or_u32 = v.into();
         visitor.visit_u8(v)
     }
 
@@ -148,6 +137,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         let v = self.parse_u16()?;
         self.logger.log_primitive(v);
+        self.last_u8_u16_or_u32 = v.into();
         visitor.visit_u16(v)
     }
 
@@ -157,6 +147,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         let v = self.parse_u32()?;
         self.logger.log_primitive(v);
+        self.last_u8_u16_or_u32 = v.into();
         visitor.visit_u32(v)
     }
 
@@ -230,6 +221,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        self.logger.log(format_args!("deserialize_unit"));
         visitor.visit_unit()
     }
 
@@ -238,6 +230,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        self.logger.log(format_args!("deserialize_unit_struct"));
         self.deserialize_unit(visitor)
     }
 
@@ -246,29 +239,36 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        self.logger.log(format_args!("deserialize_newtype_struct"));
         visitor.visit_newtype_struct(self)
     }
 
-    // Called on arrays. We parse an extra u16 before to get the number of elements.
+    // Called for array elements
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.logger.level_push();
-        let size = self.parse_u16()? as usize; // TODO what if another type? Maybe via Associated types
+        self.logger.log(format_args!("deserialize_seq"));
 
-        self.logger.log(format_args!("size = {} (u16)", size));
-        let value = visitor.visit_seq(DynamicArrayAccess::new(self, size))?;
+        self.logger.level_push();
+        let value = visitor.visit_seq(VecElemAccess::new(
+            self,
+            self.last_u8_u16_or_u32.try_into().unwrap(),
+        ))?;
         self.logger.level_pop();
         Ok(value)
     }
 
-    // Called by deserialize_struct()
+    // Called by deserialize_struct() and for Vec<T>
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let value = visitor.visit_seq(StructAccess::new(self, len))?;
+        self.logger.log(format_args!("deserialize_tuple"));
+
+        self.logger.level_push();
+        let value = visitor.visit_seq(VecElemAccess::new(self, len))?;
+        self.logger.level_pop();
         Ok(value)
     }
 
@@ -281,15 +281,47 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        self.logger.log(format_args!("deserialize_tuple_struct"));
         self.deserialize_seq(visitor)
     }
 
-    fn deserialize_map<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        //let value = visitor.visit_map(EnumMapAccess::new(self))?;
-        unimplemented!()
+        struct EnumMapAccess<'a, 'de: 'a> {
+            de: &'a mut Deserializer<'de>,
+        }
+
+        impl<'de, 'a> MapAccess<'de> for EnumMapAccess<'a, 'de> {
+            type Error = Error;
+
+            fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
+            where
+                K: DeserializeSeed<'de>,
+            {
+                self.de.logger.log(format_args!(
+                    "----------- next_key_seed: {}",
+                    any::type_name::<K::Value>()
+                ));
+                Ok(None)
+            }
+
+            fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
+            where
+                V: DeserializeSeed<'de>,
+            {
+                //let value = DeserializeSeed::deserialize(seed, &mut *self.de)?;
+                //Ok(Some(value))
+                self.de.logger.log(format_args!(
+                    "----------- next_value_seed: {}",
+                    any::type_name::<V::Value>()
+                ));
+                seed.deserialize(&mut *self.de)
+            }
+        }
+
+        visitor.visit_map(EnumMapAccess { de: self })
     }
 
     fn deserialize_struct<V>(
@@ -307,7 +339,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         // so we need to statefully store the field names in a HashMap
         self.logger.level_push();
         self.logger.set_field_names(fields);
-        let value = self.deserialize_tuple(fields.len(), visitor);
+        let value = visitor.visit_seq(StructAccess::new(self, fields.len()));
         self.logger.level_pop();
 
         value
@@ -378,19 +410,19 @@ impl<'de, 'a> SeqAccess<'de> for StructAccess<'a, 'de> {
     }
 }
 
-struct DynamicArrayAccess<'a, 'de: 'a> {
+struct VecElemAccess<'a, 'de: 'a> {
     de: &'a mut Deserializer<'de>,
     index: usize,
     len: usize,
 }
 
-impl<'a, 'de> DynamicArrayAccess<'a, 'de> {
+impl<'a, 'de> VecElemAccess<'a, 'de> {
     fn new(de: &'a mut Deserializer<'de>, len: usize) -> Self {
-        DynamicArrayAccess { de, len, index: 0 }
+        VecElemAccess { de, len, index: 0 }
     }
 }
 
-impl<'de, 'a> SeqAccess<'de> for DynamicArrayAccess<'a, 'de> {
+impl<'de, 'a> SeqAccess<'de> for VecElemAccess<'a, 'de> {
     type Error = Error;
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>

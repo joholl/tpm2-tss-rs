@@ -11,7 +11,7 @@ pub mod types {
         AlgAsym, AlgAsymScheme, AlgCipherMode, AlgEccKeyEchange, AlgHash, AlgKdf, AlgMacScheme,
         AlgPublic, AlgSigScheme, AlgSym, AlgSymMode, AlgSymObj, EccCurve,
     };
-    use crate::de::StructWithSize;
+    use crate::de::{deserialize_u16_sized_vec, deserialize_u8_sized_vec};
     use crate::handles::Hierarchy;
     use serde::{
         de::{self, IgnoredAny, MapAccess, SeqAccess, Visitor},
@@ -23,7 +23,6 @@ pub mod types {
         collections::HashMap,
         default, fmt, marker,
     };
-
 
     #[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq)]
     pub struct TPMS_COMMAND_HANDLES_CREATE_PRIMARY {
@@ -57,7 +56,6 @@ pub mod types {
     /// TPMT_SYM_DEF_OBJECT (TPMI_ALG_SYM_OBJECT, TPMU_SYM_DEF_OBJECT)
     #[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq)]
     #[repr(u16)]
-    #[serde(use_repr)]
     pub enum SymDefObject {
         TDES {
             key_bits: TPMI_TDES_KEY_BITS,
@@ -96,7 +94,6 @@ pub mod types {
     /// (incl. TPMU_ASYM_SCHEME)
     #[derive(Deserialize, Serialize, Debug, Default, Clone, PartialEq)]
     #[repr(u16)]
-    #[serde(use_repr)]
     pub enum AsymScheme {
         ECDH(TPMS_KEY_SCHEME_ECDH) = AlgAsymScheme::ECDH as u16,
         ECMQV(TPMS_KEY_SCHEME_ECMQV) = AlgAsymScheme::ECMQV as u16,
@@ -120,7 +117,6 @@ pub mod types {
     /// TPMT_KDF_SCHEME (incl. TPMU_KDF_SCHEME)
     #[derive(Deserialize, Serialize, Debug, Default, Clone, PartialEq)]
     #[repr(u16)]
-    #[serde(use_repr)]
     pub enum KDFScheme {
         MGF1(TPMS_SCHEME_MGF1) = AlgKdf::MGF1 as u16,
         KDF1Sp800_108(TPMS_SCHEME_KDF1_SP800_108) = AlgKdf::Kdf1Sp800_108 as u16,
@@ -142,7 +138,9 @@ pub mod types {
     /// TPMS_ECC_POINT
     #[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq)]
     pub struct TPMS_ECC_POINT {
+        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
         pub x: TPM2B_ECC_PARAMETER,
+        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
         pub y: TPM2B_ECC_PARAMETER,
     }
 
@@ -151,7 +149,6 @@ pub mod types {
     /// TPMT_PUBLIC (including TPMU_PUBLIC_PARMS, TPMU_PUBLIC_ID)
     #[derive(Deserialize, Debug, Serialize, Clone, PartialEq)]
     #[repr(u16)]
-    #[serde(use_repr)]
     pub enum Public {
         // TODO
         // keyedHash {
@@ -171,13 +168,16 @@ pub mod types {
         RSA {
             name_alg: AlgHash,
             object_attributes: u32,
+            #[serde(deserialize_with = "deserialize_u16_sized_vec")]
             auth_policy: TPM2B_DIGEST,
             parameters: RSAParams,
+            #[serde(deserialize_with = "deserialize_u16_sized_vec")]
             unique: TPM2B_PUBLIC_KEY_RSA,
         } = AlgPublic::RSA as u16,
         ECC {
             name_alg: AlgHash,
             object_attributes: u32,
+            #[serde(deserialize_with = "deserialize_u16_sized_vec")]
             auth_policy: TPM2B_DIGEST,
             parameters: ECCParams,
             unique: TPMS_ECC_POINT,
@@ -198,7 +198,7 @@ pub mod types {
     }
 
     /// TPM2B_PUBLIC
-    pub type PublicSized = StructWithSize<Public>;
+    //pub type PublicSized = StructWithSize<Public>;
 
     // pub struct TPMS_COMMAND_PARAMS_CREATE_PRIMARY {
     //     inSensitive: TPM2B_SENSITIVE_CREATE,
@@ -217,6 +217,20 @@ pub mod types {
 
     // pub type CreatePrimaryComand =
     //     Command<TPMS_COMMAND_HANDLES_CREATE_PRIMARY, TPMS_COMMAND_PARAMS_CREATE_PRIMARY>;
+
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
+    pub struct TPML_PCR_SELECTION {
+        count: u32,
+        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        pcrSelections: Vec<TPMS_PCR_SELECTION>,
+    }
+
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
+    pub struct TPMS_PCR_SELECTION {
+        hash: TPMI_ALG_HASH,
+        #[serde(deserialize_with = "deserialize_u8_sized_vec")]
+        pcrSelect: Vec<u8>,
+    }
 }
 
 fn is_normal<T: Sized + Send + Sync + Unpin>() {}
