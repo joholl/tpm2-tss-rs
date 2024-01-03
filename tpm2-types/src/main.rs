@@ -1,11 +1,14 @@
+pub mod alg;
 pub mod util;
-
-use serde_tpm2::{de, se};
 
 use crate::util::{from_hex, to_hex};
 use core::panic;
-use std::io::Write;
-
+use serde_tpm2::{de, se};
+use std::{any::type_name, io::Write};
+use tpm2_types::alg::{
+    AlgAsym, AlgAsymScheme, AlgCipherMode, AlgEccKeyEchange, AlgHash, AlgKdf, AlgMacScheme,
+    AlgPublic, AlgSigScheme, AlgSym, AlgSymMode, AlgSymObj, EccCurve,
+};
 use tpm2_types::{de::StructWithSize, types::*};
 
 // TPM2B_PUBLIC                              .

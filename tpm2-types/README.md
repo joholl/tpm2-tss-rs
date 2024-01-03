@@ -27,6 +27,9 @@ is a `TPM_ALG`, which is a `u16`. You get the idea.
 Currently, the aliases do not add much value beyond semantic information. Since
 aliases are overhead-free, they are used here in Rust, too.
 
+For `TPMI_ALG_` types, enums are used, e.g. `TPMI_ALG_SYM_MODE` becomes
+`AlgSymMode`. This enables compiler-checked strong typing.
+
 Single-field structs are implemented as Rust type alias, too. This flattens the
 data structure.
 
