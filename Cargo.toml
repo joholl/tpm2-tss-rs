@@ -1,5 +1,5 @@
 [workspace]
-members = ["tss2-tcti", "tss2-tcti-sys", "tss2-tcti-foobar", "tpm2-tcti-rm", "tpm2-types", "tpm2-types-alg"]
+members = ["tss2-tcti", "tss2-tcti-sys", "tss2-tcti-foobar", "tpm2-tcti-rm", "tpm2-types", "tpm2-types-macro"]
 resolver = "2"
 
 [patch.crates-io]

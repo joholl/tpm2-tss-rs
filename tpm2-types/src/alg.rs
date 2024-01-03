@@ -1,5 +1,5 @@
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use tpm2_types_alg::{alg_enum_all, alg_enum_for_at_least, alg_enum_for_exactly};
+use tpm2_types_macro::{alg_enum_all, alg_enum_for_at_least, alg_enum_for_exactly};
 
 // Spec Notation:
 //  * !ALG.AX and !ALG.AE: alg_enum_for_exactly!(SpecName, EnumName, [[asym, sign], [asym, enc]], [Null]);

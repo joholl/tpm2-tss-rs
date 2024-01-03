@@ -1,6 +1,4 @@
-mod alg_variants;
-
-use alg_variants::{AlgVariant, ALGS};
+use crate::alg_variants::{AlgVariant, ALGS};
 use core::panic;
 use proc_macro::TokenStream;
 use quote::quote;
@@ -41,12 +39,10 @@ enum Mode {
     AtLeast,
 }
 
-#[proc_macro]
 pub fn alg_enum_for_exactly(input: TokenStream) -> TokenStream {
     alg_enum(input, Mode::Exactly)
 }
 
-#[proc_macro]
 pub fn alg_enum_for_at_least(input: TokenStream) -> TokenStream {
     alg_enum(input, Mode::AtLeast)
 }
@@ -75,13 +71,13 @@ fn alg_enum(input: TokenStream, mode: Mode) -> TokenStream {
                         expr_path.path.segments[0].ident.to_string()
                     }
                     _ => panic!(
-                        "Unexpected expression for array element: {:#?}. Expected e.g. asym.",
+                        "Unexpected expression for array element: {:?}. Expected e.g. asym.",
                         type_name
                     ),
                 })
                 .collect(),
             _ => panic!(
-                "Unexpected expression for array element: {:#?}. Expected nested array.",
+                "Unexpected expression for array element: {:?}. Expected nested array.",
                 nested_array
             ),
         })
@@ -253,7 +249,6 @@ impl Parse for InputSyntax2 {
     }
 }
 
-#[proc_macro]
 pub fn alg_enum_all(input: TokenStream) -> TokenStream {
     let InputSyntax2 {
         spec_name,

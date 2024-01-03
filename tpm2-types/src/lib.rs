@@ -1,5 +1,10 @@
+#![feature(exclusive_range_pattern)]
+#![feature(const_trait_impl)]
+
 pub mod alg;
 pub mod de;
+pub mod handle_ranges;
+pub mod handles;
 
 pub mod types {
     use crate::alg::{
@@ -7,6 +12,7 @@ pub mod types {
         AlgPublic, AlgSigScheme, AlgSym, AlgSymMode, AlgSymObj, EccCurve,
     };
     use crate::de::StructWithSize;
+    use crate::handles::Hierarchy;
     use serde::{
         de::{self, IgnoredAny, MapAccess, SeqAccess, Visitor},
         Deserialize, Deserializer, Serialize,
@@ -17,145 +23,11 @@ pub mod types {
         collections::HashMap,
         default, fmt, marker,
     };
-    use strum::IntoEnumIterator;
-    use strum_macros::EnumIter;
-    use subenum::subenum;
 
-    // #[subenum(
-    //     AlgAsym,
-    //     AlgSym,
-    //     AlgHash,
-    //     AlgSign,
-    //     AlgAnonSign,
-    //     AlgEnc,
-    //     AlgMeth,
-    //     AlgObj
-    // )]
-    // #[derive(Deserialize_repr, Serialize_repr, Debug, Clone, Copy, PartialEq, EnumIter)]
-    // #[repr(u16)]
-    // pub enum Alg {
-    //     Error = 0x0000,
-    //     #[subenum(AlgAsym, AlgObj)]
-    //     RSA = 0x0001,
-    //     #[subenum(AlgSym)]
-    //     TDES = 0x0003,
-    //     #[subenum(AlgHash)]
-    //     SHA1 = 0x0004,
-    //     #[subenum(AlgHash, AlgSign)]
-    //     HMAC = 0x0005,
-    //     #[subenum(AlgSym)]
-    //     AES = 0x0006,
-    //     #[subenum(AlgHash, AlgMeth)]
-    //     MGF1 = 0x0007,
-    //     #[subenum(AlgHash, AlgObj)]
-    //     KeyedHash = 0x0008,
-    //     #[subenum(AlgHash, AlgSym)]
-    //     XOR = 0x000A,
-    //     #[subenum(AlgHash)]
-    //     SHA256 = 0x000B,
-    //     #[subenum(AlgHash)]
-    //     SHA384 = 0x000C,
-    //     #[subenum(AlgHash)]
-    //     SHA512 = 0x000D,
-    //     #[subenum(
-    //         AlgAsym,
-    //         AlgSym,
-    //         AlgHash,
-    //         AlgSign,
-    //         AlgAnonSign,
-    //         AlgEnc,
-    //         AlgMeth,
-    //         AlgObj
-    //     )]
-    //     Null = 0x0010,
-    //     #[subenum(AlgHash)]
-    //     SM3_256 = 0x0012,
-    //     #[subenum(AlgSym)]
-    //     SM4 = 0x0013,
-    //     #[subenum(AlgAsym, AlgSign)]
-    //     RSASSA = 0x0014,
-    //     #[subenum(AlgAsym, AlgEnc)]
-    //     RSAES = 0x0015,
-    //     #[subenum(AlgAsym, AlgSign)]
-    //     RSAPSS = 0x0016,
-    //     #[subenum(AlgAsym, AlgEnc, AlgSign)]
-    //     OAEP = 0x0017,
-    //     #[subenum(AlgAsym, AlgSign)]
-    //     ECDSA = 0x0018,
-    //     #[subenum(AlgAsym, AlgMeth)]
-    //     ECDH = 0x0019,
-    //     #[subenum(AlgAsym, AlgSign, AlgAnonSign)]
-    //     ECDAA = 0x001A,
-    //     #[subenum(AlgAsym, AlgSign)]
-    //     SM2 = 0x001B,
-    //     #[subenum(AlgAsym, AlgSign)]
-    //     ECSCHNORR = 0x001C,
-    //     #[subenum(AlgAsym, AlgMeth)]
-    //     ECMQV = 0x001D,
-    //     #[subenum(AlgHash, AlgMeth)]
-    //     Kdf1Sp800_56a = 0x0020,
-    //     #[subenum(AlgHash, AlgMeth)]
-    //     KDF2 = 0x0021,
-    //     #[subenum(AlgHash, AlgMeth)]
-    //     Kdf1Sp800_108 = 0x0022,
-    //     #[subenum(AlgAsym, AlgObj)]
-    //     ECC = 0x0023,
-    //     #[subenum(AlgObj, AlgSym)]
-    //     SYMCIPHER = 0x0025,
-    //     #[subenum(AlgSym)]
-    //     CAMELLIA = 0x0026,
-    //     #[subenum(AlgHash)]
-    //     SHA3_256 = 0x0027,
-    //     #[subenum(AlgHash)]
-    //     SHA3_384 = 0x0028,
-    //     #[subenum(AlgHash)]
-    //     SHA3_512 = 0x0029,
-    //     #[subenum(AlgSym, AlgEnc)]
-    //     CMAC = 0x003F,
-    //     #[subenum(AlgSym, AlgEnc)]
-    //     CTR = 0x0040,
-    //     #[subenum(AlgSym, AlgEnc)]
-    //     OFB = 0x0041,
-    //     #[subenum(AlgSym, AlgEnc)]
-    //     CBC = 0x0042,
-    //     #[subenum(AlgSym, AlgEnc)]
-    //     CFB = 0x0043,
-    //     #[subenum(AlgSym, AlgEnc)]
-    //     ECB = 0x0044,
-    // }
-
-    // #[macro_export]
-    // macro_rules! alg_by_type_at_least {
-    //     ($($t:ident),+) => {
-    //         <Alg as Iter>::iter().filter(|alg| $( $t::try_from(*alg).is_ok() )&&+).collect::<Vec<Alg>>()
-    //     };
-    // }
-
-    // macro_rules! alg_by_type_exactly {
-    //     ($($t:ident),+) => {
-    //         Self::iter().filter(|alg| $( $t::try_from(*alg).is_ok() )&&+).collect::<Vec<Alg>>()
-    //     };
-    // }
-
-    // pub fn by_types_at_least<'a, A, B>() -> Vec<Alg>
-    // where
-    //     A: TryFrom<Alg>,
-    //     B: TryFrom<Alg>,
-    // {
-    //     Self::iter()
-    //         .filter(|alg| A::try_from(*alg).is_ok() && B::try_from(*alg).is_ok())
-    //         .collect()
-    // }
-
-    #[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq)]
-    pub struct TPM_HANDLE(u32);
-
-    #[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq)]
-    pub struct TPMI_RH_HIERARCHY(TPM_HANDLE);
 
     #[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq)]
     pub struct TPMS_COMMAND_HANDLES_CREATE_PRIMARY {
-        pub primaryHandle: TPMI_RH_HIERARCHY,
+        pub primaryHandle: Hierarchy,
     }
 
     type TPM2B_DIGEST = Vec<u8>;
@@ -164,12 +36,12 @@ pub mod types {
     type TPM2B_PUBLIC_KEY_RSA = Vec<u8>;
     type TPM2B_ECC_PARAMETER = Vec<u8>;
 
-    pub type TPMI_TDES_KEY_BITS = TPM_KEY_BITS;
-    pub type TPMI_AES_KEY_BITS = TPM_KEY_BITS;
-    pub type TPMI_SM4_KEY_BITS = TPM_KEY_BITS;
-    pub type TPMI_CAMELLIA_KEY_BITS = TPM_KEY_BITS;
-    pub type TPMI_RSA_KEY_BITS = TPM_KEY_BITS;
-    pub type TPM_KEY_BITS = u16;
+    pub type TPMI_TDES_KEY_BITS = KeyBits;
+    pub type TPMI_AES_KEY_BITS = KeyBits;
+    pub type TPMI_SM4_KEY_BITS = KeyBits;
+    pub type TPMI_CAMELLIA_KEY_BITS = KeyBits;
+    pub type TPMI_RSA_KEY_BITS = KeyBits;
+    pub type KeyBits = u16;
 
     type TPMT_RSA_SCHEME = AsymScheme; // selected by TPMI_ALG_RSA_SCHEME
 
