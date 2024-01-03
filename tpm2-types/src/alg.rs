@@ -1,62 +1,85 @@
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use tpm2_types_alg::{alg_enum_for_at_least, alg_enum_for_exactly};
+use tpm2_types_alg::{alg_enum_all, alg_enum_for_at_least, alg_enum_for_exactly};
 
 // Spec Notation:
-//  * !ALG.AX and !ALG.AE: alg_enum_for_exactly!(AlgOnlySymSign, [[asym, sign], [asym, enc]], [Null]);
-//  * !ALG.ax and !ALG.ax: alg_enum_for_at_least!(AlgSymSign, [[asym, sign], [asym, enc]], [Null]);
+//  * !ALG.AX and !ALG.AE: alg_enum_for_exactly!(SpecName, EnumName, [[asym, sign], [asym, enc]], [Null]);
+//  * !ALG.ax and !ALG.ae: alg_enum_for_at_least!(SpecName, EnumName, [[asym, sign], [asym, enc]], [Null]);
 
-// TPMI_ALG_HASH
-alg_enum_for_exactly!(AlgHash, [[hash]], [Null]);
+// Having an enum with all variants called "Alg" is necessary.
+alg_enum_all!(TPM_ALG_ID, Alg);
 
-// TPMI_ALG_ASYM
-alg_enum_for_exactly!(AlgAsym, [[asym, obj]], [Null]);
+alg_enum_for_exactly!(TPMI_ALG_HASH, AlgHash, [[hash]], [Null]);
 
-// TPMI_ALG_SYM
-alg_enum_for_exactly!(AlgSym, [[sym]], [Null, XOR]);
+alg_enum_for_exactly!(TPMI_ALG_ASYM, AlgAsym, [[asym, obj]], [Null]);
 
-// TPMI_ALG_SYM_OBJECT
-alg_enum_for_exactly!(AlgSymObj, [[sym]], [Null]);
+alg_enum_for_exactly!(TPMI_ALG_SYM, AlgSym, [[sym]], [Null, XOR]);
 
-// TPMI_ALG_SYM_MODE
-alg_enum_for_exactly!(AlgSymMode, [[sym, enc], [sym, sign]], [Null]);
+alg_enum_for_exactly!(TPMI_ALG_SYM_OBJECT, AlgSymObj, [[sym]], [Null]);
 
-// TPMI_ALG_KDF
-alg_enum_for_exactly!(AlgKdf, [[hash, meth]], [Null]);
+alg_enum_for_exactly!(
+    TPMI_ALG_SYM_MODE,
+    AlgSymMode,
+    [[sym, enc], [sym, sign]],
+    [Null]
+);
 
-// TPMI_ALG_SIG_SCHEME
-alg_enum_for_at_least!(AlgSigScheme, [[asym, sign]], [Null, HMAC]);
+alg_enum_for_exactly!(TPMI_ALG_KDF, AlgKdf, [[hash, meth]], [Null]);
 
-// TPMI_ECC_KEY_EXCHANGE
-alg_enum_for_exactly!(AlgEccKeyEchange, [[asym, meth]], [Null, SM2]);
-
-// TPMI_ALG_MAC_SCHEME
-alg_enum_for_exactly!(AlgMacScheme, [[sym, sign], [hash]], [Null]);
-
-// TPMI_ALG_CIPHER_MODE
-alg_enum_for_exactly!(AlgCipherMode, [[sym, enc]], [Null]);
-
-// TPMI_ALG_KEYEDHASH_SCHEME
-alg_enum_for_at_least!(AlgKeyedHashScheme, [], [Null, HMAC, XOR]);
-
-// TPMI_ALG_ASYM_SCHEME
 alg_enum_for_at_least!(
+    TPMI_ALG_SIG_SCHEME,
+    AlgSigScheme,
+    [[asym, sign]],
+    [Null, HMAC]
+);
+
+alg_enum_for_exactly!(
+    TPMI_ECC_KEY_EXCHANGE,
+    AlgEccKeyEchange,
+    [[asym, meth]],
+    [Null, SM2]
+);
+
+alg_enum_for_exactly!(
+    TPMI_ALG_MAC_SCHEME,
+    AlgMacScheme,
+    [[sym, sign], [hash]],
+    [Null]
+);
+
+alg_enum_for_exactly!(TPMI_ALG_CIPHER_MODE, AlgCipherMode, [[sym, enc]], [Null]);
+
+alg_enum_for_at_least!(
+    TPMI_ALG_KEYEDHASH_SCHEME,
+    AlgKeyedHashScheme,
+    [],
+    [Null, HMAC, XOR]
+);
+
+alg_enum_for_at_least!(
+    TPMI_ALG_ASYM_SCHEME,
     AlgAsymScheme,
     [[asym, meth], [asym, sign], [asym, enc]],
     [Null]
 );
 
-// TPMI_ALG_RSA_SCHEME
 // TODO weird spec notation: TPM_ALG_!ALG.ae.ax
-alg_enum_for_at_least!(AlgRSAScheme, [[asym, enc], [asym, sign]], [Null]);
+alg_enum_for_at_least!(
+    TPMI_ALG_RSA_SCHEME,
+    AlgRSAScheme,
+    [[asym, enc], [asym, sign]],
+    [Null]
+);
 
-// TPMI_ALG_RSA_DECRYPT
-alg_enum_for_at_least!(AlgRSADecrypt, [[asym, enc]], [Null]);
+alg_enum_for_at_least!(TPMI_ALG_RSA_DECRYPT, AlgRSADecrypt, [[asym, enc]], [Null]);
 
-// TPMI_ALG_ECC_SCHEME
-alg_enum_for_at_least!(AlgEccScheme, [[asym, sign], [asym, meth]], [Null]);
+alg_enum_for_at_least!(
+    TPMI_ALG_ECC_SCHEME,
+    AlgEccScheme,
+    [[asym, sign], [asym, meth]],
+    [Null]
+);
 
-// TPMI_ALG_PUBLIC
-alg_enum_for_at_least!(AlgPublic, [[obj]], [Null]);
+alg_enum_for_at_least!(TPMI_ALG_PUBLIC, AlgPublic, [[obj]], [Null]);
 
 /// TPMI_ECC_CURVE
 #[derive(Deserialize_repr, Serialize_repr, Debug, Clone, Default, PartialEq)]
