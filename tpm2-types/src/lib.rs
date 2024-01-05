@@ -2,17 +2,24 @@
 #![feature(const_trait_impl)]
 
 pub mod alg;
+pub mod bitfields;
+pub mod constants;
 pub mod de;
-pub mod handle_ranges;
+pub mod enums;
 pub mod handles;
+pub mod selectables;
+pub mod structs;
 
 pub mod types {
+
     use crate::alg::{
         AlgAsym, AlgAsymScheme, AlgCipherMode, AlgEccKeyEchange, AlgHash, AlgKdf, AlgMacScheme,
         AlgPublic, AlgSigScheme, AlgSym, AlgSymMode, AlgSymObj, EccCurve,
     };
+    use crate::constants::CommandCode;
     use crate::de::{deserialize_u16_sized_vec, deserialize_u8_sized_vec};
     use crate::handles::Hierarchy;
+    use crate::structs::{ACTData, PCRSelection, TaggedPolicy};
     use serde::{
         de::{self, IgnoredAny, MapAccess, SeqAccess, Visitor},
         Deserialize, Deserializer, Serialize,
@@ -29,11 +36,47 @@ pub mod types {
         pub primaryHandle: Hierarchy,
     }
 
-    type TPM2B_DIGEST = Vec<u8>;
-    type TPM2B_SENSITIVE_CREATE = Vec<u8>;
-    type TPM2B_DATA = Vec<u8>;
-    type TPM2B_PUBLIC_KEY_RSA = Vec<u8>;
-    type TPM2B_ECC_PARAMETER = Vec<u8>;
+    // TPM2B byte buffers are not aliased since we do not hold array size information, anyway
+    // type TPM2B_DIGEST = Vec<u8>;
+    // type TPM2B_DATA = Vec<u8>;
+    // type TPM2B_NONCE = Vec<u8>;
+    // type TPM2B_AUTH = Vec<u8>;
+    // type TPM2B_OPERAND = Vec<u8>;
+    // type TPM2B_EVENT = Vec<u8>;
+    // type TPM2B_MAX_BUFFER = Vec<u8>;
+    // type TPM2B_TIMEOUT = Vec<u8>;
+    // type TPM2B_IV = Vec<u8>;
+    // type TPM2B_NAME = Vec<u8>;
+    // type TPM2B_ATTEST = Vec<u8>;
+    // type TPM2B_SYM_KEY = Vec<u8>;
+    // type TPM2B_LABEL = Vec<u8>;
+    // type TPM2B_DERIVE = Vec<u8>;
+    // type TPM2B_SENSITIVE_DATA = Vec<u8>;
+    // type TPM2B_PUBLIC_KEY_RSA = Vec<u8>;
+    // type TPM2B_PRIVATE_KEY_RSA = Vec<u8>;
+    // type TPM2B_ECC_PARAMETER = Vec<u8>;
+    // type TPM2B_ENCRYPTED_SECRET = Vec<u8>;
+    // type TPM2B_TEMPLATE = Vec<u8>;
+    // type TPM2B_PRIVATE_VENDOR_SPECIFIC = Vec<u8>;
+    // type TPM2B_PRIVATE = Vec<u8>;
+    // type TPM2B_ID_OBJECT = Vec<u8>;
+    // type TPM2B_CONTEXT_SENSITIVE = Vec<u8>;
+    // type TPM2B_CONTEXT_DATA = Vec<u8>;
+
+    // Similarly, TPML types are not aliased since we do not hold array size information
+    // type TPML_CC = Vec<CommandCode>; // count: u32
+    // type TPML_CCA = Vec<CommandCodeAttributes>; // count: u32
+    // type TPML_ALG = Vec<Alg>; // count: u32
+    // type TPML_HANDLE = Vec<Handle>; // count: u32
+    // type TPML_DIGEST = Vec<Vec<u8>>; // count: u32 (and Vec<u8> has size: u16)
+    // type TPML_DIGEST_VALUES = Vec<Digest>; // count: u32
+    // type TPML_PCR_SELECTION = Vec<PCRSelection>; // count: u32
+    // type TPML_ALG_PROPERTY = Vec<AlgorithmProperty>; // count: u32
+    // type TPML_TAGGED_TPM_PROPERTY = Vec<TaggedProperty>; // count: u32
+    // type TPML_TAGGED_PCR_PROPERTY = Vec<TaggedPCRSelect>; // count: u32
+    // type TPML_ECC_CURVE = Vec<EccCurve>; // count: u32
+    // type TPML_TAGGED_POLICY = Vec<TaggedPolicy>; // count: u32
+    // type TPML_ACT_DATA = Vec<ACTData>; // count: u32
 
     pub type TPMI_TDES_KEY_BITS = KeyBits;
     pub type TPMI_AES_KEY_BITS = KeyBits;
@@ -139,9 +182,9 @@ pub mod types {
     #[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq)]
     pub struct TPMS_ECC_POINT {
         #[serde(deserialize_with = "deserialize_u16_sized_vec")]
-        pub x: TPM2B_ECC_PARAMETER,
+        pub x: Vec<u8>,
         #[serde(deserialize_with = "deserialize_u16_sized_vec")]
-        pub y: TPM2B_ECC_PARAMETER,
+        pub y: Vec<u8>,
     }
 
     pub type TPMA_OBJECT = u32; // TODO bitfield
@@ -168,17 +211,16 @@ pub mod types {
         RSA {
             name_alg: AlgHash,
             object_attributes: u32,
-            #[serde(deserialize_with = "deserialize_u16_sized_vec")]
-            auth_policy: TPM2B_DIGEST,
+            auth_policy: Vec<u8>,
             parameters: RSAParams,
             #[serde(deserialize_with = "deserialize_u16_sized_vec")]
-            unique: TPM2B_PUBLIC_KEY_RSA,
+            unique: Vec<u8>,
         } = AlgPublic::RSA as u16,
         ECC {
             name_alg: AlgHash,
             object_attributes: u32,
             #[serde(deserialize_with = "deserialize_u16_sized_vec")]
-            auth_policy: TPM2B_DIGEST,
+            auth_policy: Vec<u8>,
             parameters: ECCParams,
             unique: TPMS_ECC_POINT,
         } = AlgPublic::ECC as u16,

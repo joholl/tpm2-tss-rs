@@ -1,10 +1,11 @@
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
-use tpm2_types_macro::HandleSubset;
+mod handle_ranges;
 
-use crate::handle_ranges::{
+use crate::handles::handle_ranges::{
     ACTHandle, AttachedComponentHandle, AuthHandle, HmacOrLoadedSessionHandle, NvIndexHandle,
     PCRHandle, PersistentHandle, PolicyOrSavedSessionHandle, SingleHandle, TransientHandle,
 };
+use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
+use tpm2_types_macro::HandleSubset;
 
 /// TPM_HANDLE
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -406,3 +407,28 @@ pub type AttachedComponent = AttachedComponentHandle;
 
 /// TPMI_RH_AC
 pub type ACT = ACTHandle;
+
+/// Not specified, added for convenience.
+#[derive(HandleSubset, Debug, Clone, Copy, PartialEq)]
+pub enum Permanent {
+    /// see [Handle::Owner]
+    Owner,
+    /// see [Handle::Null]
+    Null,
+    /// see [Handle::Unassigned]
+    Unassigned,
+    /// see [Handle::PasswordSession]
+    PasswordSession,
+    /// see [Handle::Lockout]
+    Lockout,
+    /// see [Handle::Endorsement]
+    Endorsement,
+    /// see [Handle::Platform]
+    Platform,
+    /// see [Handle::PlatformNV]
+    PlatformNV,
+    /// see [Handle::Auth]
+    Auth(AuthHandle),
+    /// see [Handle::ACT]
+    ACT(ACTHandle),
+}
