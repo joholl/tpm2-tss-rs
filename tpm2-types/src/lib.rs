@@ -9,6 +9,7 @@ pub mod enums;
 pub mod handles;
 pub mod selectables;
 pub mod structs;
+pub mod util;
 
 pub mod types {
 
@@ -18,7 +19,9 @@ pub mod types {
     };
     use crate::constants::CommandCode;
     use crate::de::{deserialize_u16_sized_vec, deserialize_u8_sized_vec};
+    use crate::enums::{AESKeyBits, CAMELLIAKeyBits, RSAKeyBits, SM4KeyBits, TDESKeyBits};
     use crate::handles::Hierarchy;
+    use crate::selectables::SymDefObject;
     use crate::structs::{ACTData, PCRSelection, TaggedPolicy};
     use serde::{
         de::{self, IgnoredAny, MapAccess, SeqAccess, Visitor},
@@ -78,13 +81,6 @@ pub mod types {
     // type TPML_TAGGED_POLICY = Vec<TaggedPolicy>; // count: u32
     // type TPML_ACT_DATA = Vec<ACTData>; // count: u32
 
-    pub type TPMI_TDES_KEY_BITS = KeyBits;
-    pub type TPMI_AES_KEY_BITS = KeyBits;
-    pub type TPMI_SM4_KEY_BITS = KeyBits;
-    pub type TPMI_CAMELLIA_KEY_BITS = KeyBits;
-    pub type TPMI_RSA_KEY_BITS = KeyBits;
-    pub type KeyBits = u16;
-
     type TPMT_RSA_SCHEME = AsymScheme; // selected by TPMI_ALG_RSA_SCHEME
 
     /// TPMS_RSA_PARMS
@@ -92,32 +88,8 @@ pub mod types {
     pub struct RSAParams {
         pub symmetric: SymDefObject, // TODO TPMT_SYM_DEF_OBJECT+
         pub scheme: TPMT_RSA_SCHEME, // TODO TPMT_SYM_DEF_OBJECT+
-        pub key_bits: TPMI_RSA_KEY_BITS,
+        pub key_bits: RSAKeyBits,
         pub exponent: u32,
-    }
-
-    /// TPMT_SYM_DEF_OBJECT (TPMI_ALG_SYM_OBJECT, TPMU_SYM_DEF_OBJECT)
-    #[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq)]
-    #[repr(u16)]
-    pub enum SymDefObject {
-        TDES {
-            key_bits: TPMI_TDES_KEY_BITS,
-            mode: AlgSymMode,
-        } = AlgSymObj::TDES as u16,
-        AES {
-            key_bits: TPMI_AES_KEY_BITS,
-            mode: AlgSymMode,
-        } = AlgSymObj::AES as u16,
-        SM4 {
-            key_bits: TPMI_SM4_KEY_BITS,
-            mode: AlgSymMode,
-        } = AlgSymObj::SM4 as u16,
-        Camellia {
-            key_bits: TPMI_CAMELLIA_KEY_BITS,
-            mode: AlgSymMode,
-        } = AlgSymObj::CAMELLIA as u16,
-        #[default]
-        Null = AlgSymObj::Null as u16,
     }
 
     type TPMS_SCHEME_HASH = AlgHash;
@@ -269,7 +241,7 @@ pub mod types {
 
     #[derive(Deserialize, Debug, Clone, PartialEq)]
     pub struct TPMS_PCR_SELECTION {
-        hash: TPMI_ALG_HASH,
+        hash: AlgHash,
         #[serde(deserialize_with = "deserialize_u8_sized_vec")]
         pcrSelect: Vec<u8>,
     }

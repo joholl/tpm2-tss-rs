@@ -53,16 +53,61 @@ is always a `u16` or `u32`.
 If a struct with an enum member has more than two members (selector, enum), all
 other members are combined into a single enum member.
 
+If an enum variant has exactly one field, it is implemented as a tuple.
+Otherwise, it is an anonymous struct variant.
 
-# Byte Arrays
+## Arrays And Other Sized Things
 
-In the spec, byte arrays (most of the `TPM2B_` structs) always consist of a size
-(`u16`) and a buffer. In Rust, they are mapped to `Vec<u8>`.
+The following is a summary of all occurances of arrays in the TPM spec.
+
+The spec is a terribly inconsistent. All of the `TPM2B_` structs have a `size:
+u16` as a first field. Most of the `TPM2B_` types have a byte buffer as a second
+field. And if they don't, the second member is not an array, but a struct where
+the size means its size in bytes.
+
+There other types of arrays. Most of them are called `TPML_`. All of the
+`TPML_` structs have a `count: u32` as a first field. Also, all of them
+have an array as a second field.
+
+Then, we have `TPMS_PCR_SELECT` which has a `size_of_select: u8` and a byte
+buffer as first/second fields. And let's not forget about
+`TPMS_PCR_SELECTION` and `TPMS_TAGGED_PCR_SELECT`, which both have
+`size_of_select: u8` and a byte buffer as second/third fields, respectively.
+
+And lastly, we have `TPMU_HA`, a union which has a statically typed byte array
+without any explicit size, based on a hash algorithm selector.
+
+Well, outside of the *Structures* spec, there is one more notable array. See, in
+TPM commands, there is an `TPMS_AUTH_COMMAND` array, which is prepended by a
+very special size. This special size is not the number of elements. No, it is
+the size of all elements combined in bytes. An analogue occurance is found in
+TPM responses.
+
+Dear TCG, if you are reading this: For the TPM3.0 I suggest that all lists of
+things are prepended by a `count: u16`. Thanks.
 
 
-# Size fields
+### Byte Arrays (TPM2B_)
 
-Aside from byte arrays, there a sized structs (_outer_):
+Since not all arrays (and not even all byte arrays) are prepended with a `u16`
+size, we have to explicitly specify which kind of size is needed.
+
+```rust
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub struct OuterStruct {
+    // ...
+    // together, this is TPM2B_NONCE
+    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    pub nonce: Vec<u8>,
+    // ...
+}
+```
+
+
+### Sized fields (TPM2B_)
+
+All `TPM2B_` types which are not byte arrays are sized structs (_outer_). These
+are:
 
 * `TPM2B_SENSITIVE_CREATE`
 * `TPM2B_ECC_POINT`
@@ -71,30 +116,46 @@ Aside from byte arrays, there a sized structs (_outer_):
 * `TPM2B_SENSITIVE`
 * `TPM2B_NV_PUBLIC`
 
-The members of _outer_ are a size (`u16`) and a struct (_inner_). Since in Rust,
-the `.size()`of _outer_ and _inner_ are different, they are two distinct types.
+The fields of _outer_ are a size (`u16`) and a struct (_inner_), where the size
+is the size of _inner_ in bytes. Note that _inner_ is not an array, just a
+single object.
 
-* in C: `TPM2B_PUBLIC { size: u16, sensitive: TPMT_PUBLIC}`
-* in Rust: `StructWithSize<Public>` (where `Public` is equivalent to `TPMT_PUBLIC`)
+```rust
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub struct OuterStruct {
+    // ...
+    // TPM2B_SENSITIVE_CREATE
+    #[serde(deserialize_with = "deserialize_u16_sized_field")]
+    pub user_auth: EccPoint,  // TPMS_ECC_POINT
+    // ...
+}
+```
 
-# Non-byte Arrays
+Via `deserialize_with`, we get rid of one level of indirection (the `TPM2B_`
+type).
+
+Alternatively, one could try to implement a custom deserialize function for e.g.
+`EccPoint` (either explicitly or via custom derive macro). The problem with this
+is that you then cannot use its default deserialize function provided by the
+serde #[derive(Deserialize)], anymore. I.e. you have to write it from scratch.
+
+With the solution above, however, you just have a function which internally
+delegates to the `EccPoint` default implementation.
+
+
+### Non-TPM2B Arrays
+
+All arrays with a count (`TPML_` and the PCR select types) are handled just like
+byte arrays: with `deserialize_u8_sized_vec`, `deserialize_u16_sized_vec`, `deserialize_u32_sized_vec`.
+
+
+### Statically-sized Arrays
 
 TODO
 
-Count:
 
-Needed as size for dynamically-sized arrays. The size is always before the
-array. Size is always u8, u16 or u32. Note: there are statically-sized
-arrays which are enum variants.
+### Command/Response AuthArea
 
+TODO
 
 
-Struct size fields
-
-Struct size fields means fields that quantify the size of the next field
-("inner") in the struct ("outer") in bytes. In these structs, there is
-always one u16 size field and one struct field. Note: there are other
-count-type fields which are distinct from size fields.
-
-In this type system, outer and inner are two distinct types to enable
-inner.size()/outer.size()

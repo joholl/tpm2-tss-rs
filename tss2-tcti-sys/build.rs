@@ -9,6 +9,7 @@ fn main() {
     let bindings = bindgen::Builder::default()
         .header(
             //.join("../../../include/tss2/tss2_tcti.h")
+<<<<<<< Updated upstream
             "../../tpm2-tss/include/tss2/tss2_tcti.h",
         )
         .header("../../tpm2-tss/include/tss2/tss2_common.h")
@@ -21,10 +22,18 @@ fn main() {
                     .to_str()
                     .unwrap()
             ),
+=======
+            "/home/hollajoh/projects/tpm2-tss/include/tss2/tss2_tcti.h",
+        )
+        .header("/home/hollajoh/projects/tpm2-tss/include/tss2/tss2_common.h")
+        .header("/home/hollajoh/projects/tpm2-tss/include/tss2/tss2_tctildr.h")
+        .clang_args([
+            &format!("-I{}", "/home/hollajoh/projects/tpm2-tss/include/tss2"),
+>>>>>>> Stashed changes
             // format!(
             //     "-L{}",
             //     project_dir
-            //         .join("/home/johannes/persistent/dev-projects/tpm/tpm2-tss/src/tss2-tcti/.libs")
+            //         .join("/home/hollajoh/projects/tpm2-tss/src/tss2-tcti/.libs")
             //         .to_str()
             //         .unwrap()
             // ),
@@ -42,6 +51,7 @@ fn main() {
 
     // TODO fix paths
     //println!("cargo:rustc-link-search=../../src/tss2-tcti/.libs");
+<<<<<<< Updated upstream
     println!(
         "cargo:rustc-link-search={}",
         project_dir
@@ -49,5 +59,8 @@ fn main() {
             .to_str()
             .unwrap()
     );
+=======
+    println!("cargo:rustc-link-search=/home/hollajoh/projects/tpm2-tss/src/tss2-tcti/.libs");
+>>>>>>> Stashed changes
     println!("cargo:rustc-link-lib=tss2-tctildr");
 }

@@ -1,5 +1,7 @@
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
+use crate::util::ConstantU32;
+
 /// TPM_SPEC
 pub struct Spec;
 impl Spec {
@@ -10,8 +12,8 @@ impl Spec {
     pub const DAY_OF_YEAR: u32 = 170;
 }
 
-/// TPM_GENERATED
-pub const GENERATED: u32 = 0xff544347;
+/// TPM_GENERATED: 0xff544347
+pub type GENERATED = ConstantU32<{ u32::from_be_bytes(*b"\xffTCG") }>;
 
 /// TPM_CC
 #[derive(Deserialize_repr, Serialize_repr, Debug, Clone, Default, PartialEq)]
@@ -224,7 +226,7 @@ pub enum StructureTag {
     AttestQuote = 0x8018,
     AttestTime = 0x8019,
     AttestCreation = 0x801A,
-    AttestNvDigest = 0x801C,
+    AttestNVDigest = 0x801C,
     Creation = 0x8021,
     Verified = 0x8022,
     AuthSecret = 0x8023,

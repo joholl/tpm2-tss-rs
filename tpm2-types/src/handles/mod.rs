@@ -1,8 +1,11 @@
 mod handle_ranges;
 
-use crate::handles::handle_ranges::{
-    ACTHandle, AttachedComponentHandle, AuthHandle, HmacOrLoadedSessionHandle, NvIndexHandle,
-    PCRHandle, PersistentHandle, PolicyOrSavedSessionHandle, SingleHandle, TransientHandle,
+use crate::{
+    handles::handle_ranges::{
+        ACTHandle, AttachedComponentHandle, AuthHandle, HmacOrLoadedSessionHandle, NvIndexHandle,
+        PCRHandle, PersistentHandle, PolicyOrSavedSessionHandle, TransientHandle,
+    },
+    util::ConstantU32,
 };
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 use tpm2_types_macro::HandleSubset;
@@ -347,7 +350,22 @@ pub enum HierarchyPolicy {
 }
 
 /// TPMI_RH_PLATFORM
-pub type Platform = SingleHandle<0x4000000C>; // u32::from(Handle::Platform)
+pub type Platform = ConstantU32<0x4000000C>; // u32::from(Handle::Platform)
+
+impl TryFrom<Handle> for Platform {
+    type Error = ();
+
+    fn try_from(value: Handle) -> Result<Self, Self::Error> {
+        u32::from(value).try_into()
+    }
+}
+
+impl From<Platform> for Handle {
+    fn from(_value: Platform) -> Self {
+        // An u32 from a valid handle can always be converted back to a handle
+        Handle::try_from(Platform::VALUE).unwrap()
+    }
+}
 
 /// TPMI_RH_OWNER
 #[derive(HandleSubset, Debug, Clone, Copy, PartialEq)]
@@ -397,7 +415,22 @@ pub enum NVAuth {
 }
 
 /// TPMI_RH_LOCKOUT
-pub type Lockout = SingleHandle<0x4000000A>; // u32::from(Handle::Lockout)
+pub type Lockout = ConstantU32<0x4000000A>; // u32::from(Handle::Lockout)
+
+impl TryFrom<Handle> for Lockout {
+    type Error = ();
+
+    fn try_from(value: Handle) -> Result<Self, Self::Error> {
+        u32::from(value).try_into()
+    }
+}
+
+impl From<Lockout> for Handle {
+    fn from(_value: Lockout) -> Self {
+        // An u32 from a valid handle can always be converted back to a handle
+        Handle::try_from(Lockout::VALUE).unwrap()
+    }
+}
 
 /// TPMI_RH_NV_INDEX
 pub type NVIndex = NvIndexHandle;

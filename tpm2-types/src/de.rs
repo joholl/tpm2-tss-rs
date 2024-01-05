@@ -1,5 +1,31 @@
 use serde::{Deserialize, Deserializer};
 
+/// Size is number of bytes.
+pub fn deserialize_sized_field<'de, D, Size, Field>(deserializer: D) -> Result<Field, D::Error>
+where
+    D: Deserializer<'de>,
+    Size: Deserialize<'de>,
+    Field: Deserialize<'de>,
+{
+    #[derive(Deserialize)]
+    struct SizedField<Size, Field> {
+        _size: Size,
+        field: Field,
+    }
+
+    let sized_field = SizedField::<Size, Field>::deserialize(deserializer)?;
+    Ok(sized_field.field)
+}
+
+pub fn deserialize_u16_sized_field<'de, D, Field>(deserializer: D) -> Result<Field, D::Error>
+where
+    D: Deserializer<'de>,
+    Field: Deserialize<'de>,
+{
+    deserialize_sized_field::<D, u16, Field>(deserializer)
+}
+
+/// Size is number of elements.
 pub fn deserialize_sized_vec<'de, D, Size, Element>(
     deserializer: D,
 ) -> Result<Vec<Element>, D::Error>

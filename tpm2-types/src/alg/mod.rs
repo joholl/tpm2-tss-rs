@@ -5,6 +5,8 @@ use tpm2_types_macro::{alg_enum_all, alg_enum_for_at_least, alg_enum_for_exactly
 //  * !ALG.AX and !ALG.AE: alg_enum_for_exactly!(SpecName, EnumName, [[asym, sign], [asym, enc]], [Null]);
 //  * !ALG.ax and !ALG.ae: alg_enum_for_at_least!(SpecName, EnumName, [[asym, sign], [asym, enc]], [Null]);
 
+// TODO document type selectors in doc string?
+
 // Having an enum with all variants called "Alg" is necessary.
 alg_enum_all!(TPM_ALG_ID, Alg);
 
@@ -63,6 +65,8 @@ alg_enum_for_at_least!(
 );
 
 // TODO weird spec notation: TPM_ALG_!ALG.ae.ax
+// TODO incorrect, according to TSS, it is TPM2_ALG_RSAES, TPM2_ALG_OAEP, TPM2_ALG_RSASSA, TPM2_ALG_RSAPSS, TPM2_ALG_NULL
+// see https://github.com/tpm2-software/tpm2-tss/blob/28d6850acf036409c291c41052fd56b369a16e68/src/tss2-fapi/tpm_json_serialize.c#L3193
 alg_enum_for_at_least!(
     TPMI_ALG_RSA_SCHEME,
     AlgRSAScheme,
@@ -70,11 +74,14 @@ alg_enum_for_at_least!(
     [Null]
 );
 
+// TODO only RSAES?
 alg_enum_for_at_least!(TPMI_ALG_RSA_DECRYPT, AlgRSADecrypt, [[asym, enc]], [Null]);
 
+// TODO apparently: TPM2_ALG_ECDSA, TPM2_ALG_ECDAA, TPM2_ALG_SM2, TPM2_ALG_ECSCHNORR, TPM2_ALG_ECDH, TPM2_ALG_NULL
+// see https://github.com/tpm2-software/tpm2-tss/blob/28d6850acf036409c291c41052fd56b369a16e68/src/tss2-fapi/tpm_json_serialize.c#L3349
 alg_enum_for_at_least!(
     TPMI_ALG_ECC_SCHEME,
-    AlgEccScheme,
+    AlgECCScheme,
     [[asym, sign], [asym, meth]],
     [Null]
 );
