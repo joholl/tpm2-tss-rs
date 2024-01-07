@@ -19,11 +19,11 @@ pub struct Logger {
 
 impl Logger {
     pub fn new(prefix: String) -> Logger {
-        return Logger {
-            prefix: prefix,
+        Logger {
+            prefix,
             level: 0,
             field_names: HashMap::new(),
-        };
+        }
     }
 
     pub fn level_push(&mut self) {
@@ -43,7 +43,7 @@ impl Logger {
     }
 
     pub fn get_field_names(&self) -> &'static [&'static str] {
-        static TOP_LEVEL_ENUM: [&'static str; 2] = ["enum_discriminant", "enum_variant"];
+        static TOP_LEVEL_ENUM: [&str; 2] = ["enum_discriminant", "enum_variant"];
         self.field_names
             .get(&self.level)
             .unwrap_or(&TOP_LEVEL_ENUM.as_ref())

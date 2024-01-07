@@ -1,6 +1,5 @@
 use core::panic;
 use proc_macro::TokenStream;
-use proc_macro2;
 use quote::quote;
 use syn::{
     self, parse_macro_input, punctuated::Punctuated, Data, DataEnum, DeriveInput, Fields,
@@ -51,7 +50,7 @@ fn match_arms_tokenstream(
         })
         .collect();
     if can_fail {
-        result.push(quote! {_ => Err(()),}.into())
+        result.push(quote! {_ => Err(()),})
     }
 
     result

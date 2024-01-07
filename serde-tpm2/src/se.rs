@@ -177,6 +177,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     where
         T: ?Sized + Serialize,
     {
+        // TODO is this needed?
         log::info!("serializing {:i$}Some(...)", "", i = self.indent());
         //self.level_push();
         let result = value.serialize(self);
@@ -402,8 +403,7 @@ impl<'a> ser::SerializeSeq for &'a mut Serializer {
     {
         self.logger
             .log(format_args!("seq element[...] ({})", any::type_name::<T>()));
-        let result = value.serialize(&mut **self);
-        result
+        value.serialize(&mut **self)
     }
 
     fn end(self) -> Result<()> {
@@ -511,8 +511,7 @@ impl<'a> ser::SerializeStruct for &'a mut Serializer {
     {
         self.logger
             .log(format_args!(".{} ({})", key, any::type_name::<T>()));
-        let result = value.serialize(&mut **self);
-        result
+        value.serialize(&mut **self)
     }
 
     fn end(self) -> Result<()> {

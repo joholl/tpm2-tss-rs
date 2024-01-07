@@ -501,7 +501,7 @@ impl AlgVariant {
     }
 
     pub fn types(&self) -> HashSet<String> {
-        let r = vec![
+        let r = [
             "asym",
             "sym",
             "hash",

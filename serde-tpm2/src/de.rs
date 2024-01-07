@@ -147,7 +147,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         let v = self.parse_u32()?;
         self.logger.log_primitive(v);
-        self.last_u8_u16_or_u32 = v.into();
+        self.last_u8_u16_or_u32 = v;
         visitor.visit_u32(v)
     }
 
@@ -296,10 +296,11 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         impl<'de, 'a> MapAccess<'de> for EnumMapAccess<'a, 'de> {
             type Error = Error;
 
-            fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
+            fn next_key_seed<K>(&mut self, _seed: K) -> Result<Option<K::Value>>
             where
                 K: DeserializeSeed<'de>,
             {
+                // TODO remove before flight
                 self.de.logger.log(format_args!(
                     "----------- next_key_seed: {}",
                     any::type_name::<K::Value>()
@@ -368,7 +369,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         Ok(value)
     }
 
-    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
@@ -429,7 +430,7 @@ impl<'de, 'a> SeqAccess<'de> for VecElemAccess<'a, 'de> {
     where
         T: DeserializeSeed<'de>,
     {
-        if !(self.index < self.len) {
+        if self.index >= self.len {
             return Ok(None);
         }
 
