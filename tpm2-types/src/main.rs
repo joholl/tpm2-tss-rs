@@ -1,20 +1,14 @@
 pub mod alg;
-pub mod de;
 pub mod util;
 
-use crate::{
-    de::{deserialize_sized_vec, deserialize_u16_sized_vec},
-    util::{from_hex, to_hex},
-};
-use core::panic;
-use serde::{Deserialize, Deserializer};
+use crate::util::{from_hex, to_hex};
 use serde_tpm2::{de::from_bytes, se::to_bytes};
-use std::{any::type_name, io::Write};
-use tpm2_types::alg::{
-    AlgAsym, AlgAsymScheme, AlgCipherMode, AlgEccKeyEchange, AlgHash, AlgKdf, AlgMacScheme,
-    AlgPublic, AlgSigScheme, AlgSym, AlgSymMode, AlgSymObj, EccCurve,
+use tpm2_types::selectables::EccScheme;
+use tpm2_types::{
+    alg::{AlgHash, EccCurve},
+    selectables::{KdfScheme, Public, SymDefObject},
+    structs::{ECCParams, EccPoint},
 };
-use tpm2_types::types::*;
 
 // TPM2B_PUBLIC                              .
 // UINT16                                    |   .size                                      001e                 30
@@ -77,11 +71,11 @@ fn main() {
         auth_policy: [0xaa, 0xbb, 0xcc].to_vec(),
         parameters: ECCParams {
             symmetric: SymDefObject::Null,
-            scheme: AsymScheme::ECDH(AlgHash::SHA256),
+            scheme: EccScheme::ECDH(AlgHash::SHA256),
             curve_id: EccCurve::NistP256,
-            kdf: KDFScheme::Null,
+            kdf: KdfScheme::Null,
         },
-        unique: TPMS_ECC_POINT {
+        unique: EccPoint {
             x: [].to_vec(),
             y: [0xaa, 0xbb, 0xcc].to_vec(),
         },

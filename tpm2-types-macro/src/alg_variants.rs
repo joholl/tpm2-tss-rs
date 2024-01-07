@@ -364,7 +364,7 @@ pub const ALGS: [AlgVariant; 39] = [
         obj: true,
     },
     AlgVariant {
-        name: "SYMCIPHER",
+        name: "SymCipher",
         value: 0x0025,
         asym: false,
         sym: true,

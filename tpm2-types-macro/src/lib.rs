@@ -1,7 +1,6 @@
 mod alg_enums;
 mod alg_variants;
 mod handle_enums;
-
 use proc_macro::TokenStream;
 
 #[proc_macro]
