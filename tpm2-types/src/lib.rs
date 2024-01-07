@@ -9,6 +9,8 @@ pub mod structs;
 pub mod util;
 
 pub mod types {
+    pub use crate::selectables::Public;
+
     // TPM2B byte buffers are not aliased since we do not hold array size information, anyway
     // type TPM2B_DIGEST = Vec<u8>;
     // type TPM2B_DATA = Vec<u8>;

@@ -1,5 +1,6 @@
 use core::panic;
 use proc_macro::TokenStream;
+use proc_macro2;
 use quote::quote;
 use syn::{
     self, parse_macro_input, punctuated::Punctuated, Data, DataEnum, DeriveInput, Fields,
@@ -64,19 +65,24 @@ pub fn handle_enum(input: TokenStream) -> TokenStream {
         _ => panic!("Expected enum."),
     };
 
-    let enum_indent = input.ident;
-    let handle_ident = Ident::new("Handle", enum_indent.span());
-    let self_ident = syn::Ident::new("Self", enum_indent.span());
+    let enum_ident = input.ident;
+    let handle_ident = Ident::new("Handle", enum_ident.span());
+    let self_ident = syn::Ident::new("Self", enum_ident.span());
 
-    let ident_to_self = match_arms_tokenstream(&variants, &enum_indent, &self_ident, false);
+    let ident_to_self = match_arms_tokenstream(&variants, &enum_ident, &self_ident, false);
     let handle_to_self_can_fail =
         match_arms_tokenstream(&variants, &handle_ident, &self_ident, true);
 
     // TODO can we add doc strings?
 
+    let test_conversion = syn::Ident::new(
+        &format!("test_conversion_{}", enum_ident.to_string().to_lowercase()),
+        enum_ident.span(),
+    );
+
     // Build the output, possibly using quasi-quotation
     let expanded = quote! {
-        impl TryFrom<Handle> for #enum_indent {
+        impl TryFrom<Handle> for #enum_ident {
             type Error = ();
 
             fn try_from(value: Handle) -> Result<Self, Self::Error> {
@@ -86,36 +92,36 @@ pub fn handle_enum(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl From<#enum_indent> for Handle {
-            fn from(value: #enum_indent) -> Self {
+        impl From<#enum_ident> for Handle {
+            fn from(value: #enum_ident) -> Self {
                 match value {
                     #(#ident_to_self)*
                 }
             }
         }
 
-        impl TryFrom<u32> for #enum_indent {
+        impl TryFrom<u32> for #enum_ident {
             type Error = ();
 
             fn try_from(value: u32) -> Result<Self, Self::Error> {
-                #enum_indent::try_from(Handle::try_from(value)?)
+                #enum_ident::try_from(Handle::try_from(value)?)
             }
         }
 
-        impl From<#enum_indent> for u32 {
-            fn from(value: #enum_indent) -> Self {
+        impl From<#enum_ident> for u32 {
+            fn from(value: #enum_ident) -> Self {
                 u32::from(Handle::from(value))
             }
         }
 
-        impl<'de> Deserialize<'de> for #enum_indent {
+        impl<'de> Deserialize<'de> for #enum_ident {
             fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where
                 D: Deserializer<'de>,
             {
                 struct HandleVisitor;
                 impl<'de> Visitor<'de> for HandleVisitor {
-                    type Value = #enum_indent;
+                    type Value = #enum_ident;
 
                     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                         formatter.write_str(&format!("u32 handle"))
@@ -125,7 +131,7 @@ pub fn handle_enum(input: TokenStream) -> TokenStream {
                     where
                         E: serde::de::Error,
                     {
-                        #enum_indent::try_from(v)
+                        #enum_ident::try_from(v)
                             .map_err(|_| E::invalid_value(serde::de::Unexpected::Unsigned(v.into()), &self))
                     }
                 }
@@ -134,12 +140,37 @@ pub fn handle_enum(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl Serialize for #enum_indent {
+        impl Serialize for #enum_ident {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where
                 S: Serializer,
             {
                 serializer.serialize_u32(u32::from(*self))
+            }
+        }
+
+        #[test]
+        fn #test_conversion() {
+            // enum <-> Handle
+            let handle_null = Handle::Null;
+            match #enum_ident::try_from(Handle::Null) {
+                Ok(variant) => {
+                    // Handle::Null -> #enum_ident::Null [is ok]
+
+                    // #enum_ident::Null -> Handle::Null
+                    let handle_null: Handle = variant.into();
+                    assert_eq!(Handle::from(variant), Handle::Null);
+
+                    // test #enum_ident::Null -> u32
+                    assert_eq!(u32::from(handle_null), 0x40000007);
+                    assert_eq!(u32::from(variant), 0x40000007);
+
+                    assert!(#enum_ident::try_from(0x40000007).is_ok());
+                },
+                Err(()) => {
+                    // Enum does not have variant Null. Skip test.
+                    // TODO actually skip instead of succeeding
+                },
             }
         }
     };

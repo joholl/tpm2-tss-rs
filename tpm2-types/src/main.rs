@@ -89,10 +89,10 @@ fn main() {
 
     let in_public_hex = "0023000b000200720003aabbcc00100019000b0003001000000003aabbcc";
     println!("expected       = {:?}", in_public_hex);
-    //assert_eq!(serialized_hex, in_public_hex);
+    assert_eq!(serialized_hex, in_public_hex);
 
     let serialized: Vec<u8> = from_hex(in_public_hex).unwrap();
-    let in_public_de: Public = from_bytes(&serialized).unwrap();
+    let in_public_de: Public = from_bytes::<Public>(&serialized).unwrap();
     println!("deserialized_hex = {:#?}", in_public_de);
     assert_eq!(in_public_de, in_public);
 }

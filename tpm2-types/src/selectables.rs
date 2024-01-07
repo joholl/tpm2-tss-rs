@@ -19,12 +19,11 @@ use crate::structs::{
     SignatureRSASSA, SignatureSM2, TaggedPCRSelect, TaggedPolicy, TaggedProperty, TimeAttestInfo,
 };
 use crate::{constants::StructureTag, handles::Hierarchy};
-use serde::{Deserialize, Serialize};
+use serde::{self, Deserialize, Serialize};
 
 // TODO maybe use Vec<u8>? But then we would need to map AlgHash to the size.
 /// TPMT_HA: TPMI_ALG_HASH (AlgHash), TPMU_HA
 #[derive(Deserialize, Serialize, Debug, Clone, Default, PartialEq)]
-#[serde(use_repr)]
 #[repr(u16)]
 pub enum Digest {
     Sha1([u8; 20]) = AlgHash::SHA1 as u16,
