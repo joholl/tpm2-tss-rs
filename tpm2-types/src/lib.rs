@@ -1,6 +1,3 @@
-#![feature(exclusive_range_pattern)]
-#![feature(const_trait_impl)]
-
 pub mod alg;
 pub mod bitfields;
 pub mod constants;

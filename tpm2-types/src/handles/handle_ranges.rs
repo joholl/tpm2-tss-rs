@@ -10,6 +10,7 @@ pub struct HandleRange<const MIN: u32, const MAX: u32> {
 impl<const MIN: u32, const MAX: u32> HandleRange<MIN, MAX> {
     pub const MIN: u32 = MIN;
     pub const MAX: u32 = MAX;
+    pub const MAX_INCL: u32 = MAX - 1;
 
     pub fn new(value: u32) -> Result<Self, ()> {
         if value >= MIN && value < MAX {

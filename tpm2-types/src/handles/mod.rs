@@ -96,12 +96,14 @@ impl TryFrom<u32> for Handle {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            PCRHandle::MIN..PCRHandle::MAX => Ok(Handle::PCR(value.try_into()?)),
-            NvIndexHandle::MIN..NvIndexHandle::MAX => Ok(Handle::NvIndex(value.try_into()?)),
-            HmacOrLoadedSessionHandle::MIN..HmacOrLoadedSessionHandle::MAX => {
+            // TODO MAX_INCL is a workaround until
+            // https://github.com/rust-lang/rust/issues/67792 is part of stable
+            PCRHandle::MIN..=PCRHandle::MAX_INCL => Ok(Handle::PCR(value.try_into()?)),
+            NvIndexHandle::MIN..=NvIndexHandle::MAX_INCL => Ok(Handle::NvIndex(value.try_into()?)),
+            HmacOrLoadedSessionHandle::MIN..=HmacOrLoadedSessionHandle::MAX_INCL => {
                 Ok(Handle::HmacOrLoadedSession(value.try_into()?))
             }
-            PolicyOrSavedSessionHandle::MIN..PolicyOrSavedSessionHandle::MAX => {
+            PolicyOrSavedSessionHandle::MIN..=PolicyOrSavedSessionHandle::MAX_INCL => {
                 Ok(Handle::PolicyOrSavedSession(value.try_into()?))
             }
             0x40000001 => Ok(Handle::Owner),
@@ -112,13 +114,15 @@ impl TryFrom<u32> for Handle {
             0x4000000B => Ok(Handle::Endorsement),
             0x4000000C => Ok(Handle::Platform),
             0x4000000D => Ok(Handle::PlatformNV),
-            AuthHandle::MIN..AuthHandle::MAX => Ok(Handle::Auth(value.try_into()?)),
-            ACTHandle::MIN..ACTHandle::MAX => Ok(Handle::ACT(value.try_into()?)),
-            TransientHandle::MIN..TransientHandle::MAX => Ok(Handle::Transient(value.try_into()?)),
-            PersistentHandle::MIN..PersistentHandle::MAX => {
+            AuthHandle::MIN..=AuthHandle::MAX_INCL => Ok(Handle::Auth(value.try_into()?)),
+            ACTHandle::MIN..=ACTHandle::MAX_INCL => Ok(Handle::ACT(value.try_into()?)),
+            TransientHandle::MIN..=TransientHandle::MAX_INCL => {
+                Ok(Handle::Transient(value.try_into()?))
+            }
+            PersistentHandle::MIN..=PersistentHandle::MAX_INCL => {
                 Ok(Handle::Persistent(value.try_into()?))
             }
-            AttachedComponentHandle::MIN..AttachedComponentHandle::MAX => {
+            AttachedComponentHandle::MIN..=AttachedComponentHandle::MAX_INCL => {
                 Ok(Handle::AttachedComponent(value.try_into()?))
             }
             _ => Err(()),
