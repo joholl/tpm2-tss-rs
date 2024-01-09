@@ -8,7 +8,7 @@ use crate::constants::{Capability, CommandCode};
 use crate::enums::{AESKeyBits, CAMELLIAKeyBits, SM4KeyBits, StructureTagAttest, TDESKeyBits};
 use crate::handles::Handle;
 use crate::serde_types::big_array::BigArray;
-use crate::serde_types::de::{deserialize_u16_sized_vec, deserialize_u32_sized_vec};
+use crate::serde_types::sized_vector::{U16SizedVector, U32SizedVector};
 use crate::structs::{
     ACTData, AlgorithmProperty, CertifyInfo, ClockInfo, CommandAuditInfo, CreationInfo, ECCParams,
     EccPoint, EncSchemeOAEP, KeySchemeECDH, KeySchemeECMQ, KeyedHashParams, NVCertifyInfo,
@@ -49,30 +49,30 @@ pub enum Ticket {
     /// TPMT_TK_CREATION
     Creation {
         hierarchy: Hierarchy,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         digest: Vec<u8>,
     } = StructureTag::Creation as u16,
     /// TPMT_TK_VERIFIED
     Verified {
         hierarchy: Hierarchy,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         digest: Vec<u8>,
     } = StructureTag::Verified as u16,
     /// TPMT_TK_AUTH
     AuthSecret {
         hierarchy: Hierarchy,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         digest: Vec<u8>,
     } = StructureTag::AuthSecret as u16,
     Hashcheck {
         hierarchy: Hierarchy,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         digest: Vec<u8>,
     } = StructureTag::Hashcheck as u16,
     /// TPMT_TK_AUTH
     AuthSigned {
         hierarchy: Hierarchy,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         digest: Vec<u8>,
     } = StructureTag::AuthSigned as u16,
 }
@@ -81,28 +81,22 @@ pub enum Ticket {
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 #[repr(u16)]
 pub enum Capabilities {
-    Algorithms(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<AlgorithmProperty>) =
-        Capability::Algs as u16,
-    Handles(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<Handle>) =
-        Capability::Handles as u16,
-    Commands(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<CommandCodeAttributes>) =
+    Algorithms(#[serde(with = "U32SizedVector")] Vec<AlgorithmProperty>) = Capability::Algs as u16,
+    Handles(#[serde(with = "U32SizedVector")] Vec<Handle>) = Capability::Handles as u16,
+    Commands(#[serde(with = "U32SizedVector")] Vec<CommandCodeAttributes>) =
         Capability::Commands as u16,
-    PPCommands(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<CommandCode>) =
-        Capability::PPCommands as u16,
-    AuditCommands(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<CommandCode>) =
+    PPCommands(#[serde(with = "U32SizedVector")] Vec<CommandCode>) = Capability::PPCommands as u16,
+    AuditCommands(#[serde(with = "U32SizedVector")] Vec<CommandCode>) =
         Capability::AuditCommands as u16,
-    AssignedPCRs(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<PCRSelection>) =
-        Capability::Pcrs as u16,
-    TpmProperties(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<TaggedProperty>) =
+    AssignedPCRs(#[serde(with = "U32SizedVector")] Vec<PCRSelection>) = Capability::Pcrs as u16,
+    TpmProperties(#[serde(with = "U32SizedVector")] Vec<TaggedProperty>) =
         Capability::TpmProperties as u16,
-    PcrProperties(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<TaggedPCRSelect>) =
+    PcrProperties(#[serde(with = "U32SizedVector")] Vec<TaggedPCRSelect>) =
         Capability::PcrProperties as u16,
-    EccCurves(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<EccCurve>) =
-        Capability::EccCurves as u16,
-    AuthPolicies(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<TaggedPolicy>) =
+    EccCurves(#[serde(with = "U32SizedVector")] Vec<EccCurve>) = Capability::EccCurves as u16,
+    AuthPolicies(#[serde(with = "U32SizedVector")] Vec<TaggedPolicy>) =
         Capability::AuthPolicies as u16,
-    ACT(#[serde(deserialize_with = "deserialize_u32_sized_vec")] Vec<ACTData>) =
-        Capability::ACT as u16,
+    ACT(#[serde(with = "U32SizedVector")] Vec<ACTData>) = Capability::ACT as u16,
 }
 
 /// TPMS_ATTEST: TPMI_ST_ATTEST, TPMU_ATTEST
@@ -110,72 +104,72 @@ pub enum Capabilities {
 #[repr(u16)]
 pub enum AttestBody {
     Certify {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         qualified_signer: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         extra_data: Vec<u8>,
         clock_info: ClockInfo,
         firmware_version: u64,
         attested: CertifyInfo,
     } = StructureTagAttest::AttestCertify as u16,
     Creation {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         qualified_signer: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         extra_data: Vec<u8>,
         clock_info: ClockInfo,
         firmware_version: u64,
         attested: CreationInfo,
     } = StructureTagAttest::AttestCreation as u16,
     Quote {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         qualified_signer: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         extra_data: Vec<u8>,
         clock_info: ClockInfo,
         firmware_version: u64,
         attested: QuoteInfo,
     } = StructureTagAttest::AttestQuote as u16,
     CommandAudit {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         qualified_signer: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         extra_data: Vec<u8>,
         clock_info: ClockInfo,
         firmware_version: u64,
         attested: CommandAuditInfo,
     } = StructureTagAttest::AttestCommandAudit as u16,
     SessionAudit {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         qualified_signer: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         extra_data: Vec<u8>,
         clock_info: ClockInfo,
         firmware_version: u64,
         attested: SessionAuditInfo,
     } = StructureTagAttest::AttestSessionAudit as u16,
     Time {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         qualified_signer: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         extra_data: Vec<u8>,
         clock_info: ClockInfo,
         firmware_version: u64,
         attested: TimeAttestInfo,
     } = StructureTagAttest::AttestTime as u16,
     NV {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         qualified_signer: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         extra_data: Vec<u8>,
         clock_info: ClockInfo,
         firmware_version: u64,
         attested: NVCertifyInfo,
     } = StructureTagAttest::AttestNV as u16,
     NVDigest {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         qualified_signer: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         extra_data: Vec<u8>,
         clock_info: ClockInfo,
         firmware_version: u64,
@@ -366,34 +360,34 @@ pub enum Public {
     KeyedHash {
         name_alg: AlgHash,
         object_attributes: ObjectAttributes,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         auth_policy: Vec<u8>,
         parameters: KeyedHashParams,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         unique: Vec<u8>,
     } = AlgPublic::KeyedHash as u16,
     SymCipher {
         name_alg: AlgHash,
         object_attributes: ObjectAttributes,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         auth_policy: Vec<u8>,
         parameters: SymCipherParams,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         unique: Vec<u8>,
     } = AlgPublic::SymCipher as u16,
     RSA {
         name_alg: AlgHash,
         object_attributes: ObjectAttributes,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         auth_policy: Vec<u8>,
         parameters: RSAParams,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         unique: Vec<u8>,
     } = AlgPublic::RSA as u16,
     ECC {
         name_alg: AlgHash,
         object_attributes: ObjectAttributes,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         auth_policy: Vec<u8>,
         parameters: ECCParams,
         unique: EccPoint,
@@ -406,35 +400,35 @@ pub enum Public {
 #[repr(u16)]
 pub enum Sensitive {
     KeyedHash {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         auth_value: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         seed_value: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         sensitive: Vec<u8>,
     } = AlgPublic::KeyedHash as u16,
     SymCipher {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         auth_value: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         seed_value: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         sensitive: Vec<u8>,
     } = AlgPublic::SymCipher as u16,
     RSA {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         auth_value: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         seed_value: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         sensitive: Vec<u8>,
     } = AlgPublic::RSA as u16,
     ECC {
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         auth_value: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         seed_value: Vec<u8>,
-        #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+        #[serde(with = "U16SizedVector")]
         sensitive: Vec<u8>,
     } = AlgPublic::ECC as u16,
 }

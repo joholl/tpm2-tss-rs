@@ -1,7 +1,5 @@
-use core::panic;
-use std::any;
-
 use serde::{ser, Serialize};
+use std::any;
 
 use crate::{
     error::{Error, Result},
@@ -230,22 +228,8 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     // doesn't make a difference in JSON because the length is not represented
     // explicitly in the serialized form. Some serializers may only be able to
     // support sequences for which the length is known up front.
-    fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
-        // cast len to u16
-        let len = match len {
-            Some(len) => match u16::try_from(len) {
-                Ok(len) => len,
-                Err(_) => {
-                    panic!("Error, cannot serialize sequence len as u16: {}", len);
-                }
-            },
-            None => panic!("Error, cannot serialize sequence len: None"),
-        };
-
-        // serialize len of sequence as u16
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq> {
         self.logger.level_push();
-        self.serialize_u16(len)?;
-        self.logger.log(format_args!("size = {} (u16)", len));
         Ok(self)
     }
 

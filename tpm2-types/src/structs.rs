@@ -11,7 +11,7 @@ use crate::{
         AsymScheme, AttestBody, Digest, EccScheme, KdfScheme, KeyedHashScheme, RSAScheme,
         SymDefObject,
     },
-    serde_types::de::deserialize_u16_sized_vec,
+    serde_types::sized_vector::{U16SizedVector, U8SizedVector},
 };
 use serde::{Deserialize, Serialize};
 
@@ -22,13 +22,13 @@ pub struct AlgorithmDescription {
     pub attributes: AlgorithAttributes,
 }
 
-// TPMS_PCR_SELECT is deserialize_with_u8_size Vec<u8>
+// TPMS_PCR_SELECT is #[serde(with = "U8SizedVector")] Vec<u8>
 
 /// TPMS_PCR_SELECTION
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct PCRSelection {
     pub hash: AlgHash,
-    // TODO deserialize_with_u8_size
+    #[serde(with = "U8SizedVector")]
     pub pcr_select: Vec<u8>,
 }
 
@@ -50,7 +50,7 @@ pub struct TaggedProperty {
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct TaggedPCRSelect {
     pub tag: PCRPropertyTag,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U8SizedVector")]
     pub pcr_select: Vec<u8>,
 }
 
@@ -95,9 +95,9 @@ pub struct TimeAttestInfo {
 /// TPMS_CERTIFY_INFO
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct CertifyInfo {
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub name: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub qualified_name: Vec<u8>,
 }
 
@@ -106,7 +106,7 @@ pub struct CertifyInfo {
 pub struct QuoteInfo {
     // TODO deserialize_with_u32_size
     pub pcr_select: Vec<PCRSelection>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub pcr_digest: Vec<u8>,
 }
 
@@ -115,9 +115,9 @@ pub struct QuoteInfo {
 pub struct CommandAuditInfo {
     pub audit_counter: u64,
     pub digest_alg: AlgHash,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub audit_digest: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub command_digest: Vec<u8>,
 }
 
@@ -125,35 +125,35 @@ pub struct CommandAuditInfo {
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct SessionAuditInfo {
     pub exclusive_session: bool,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub session_digest: Vec<u8>,
 }
 
 /// TPMS_CREATION_INFO
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct CreationInfo {
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub object_name: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub creation_hash: Vec<u8>,
 }
 
 /// TPMS_NV_CERTIFY_INFO
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct NVCertifyInfo {
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub index_name: Vec<u8>,
     pub offset: u16,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub nv_contents: Vec<u8>,
 }
 
 /// TPMS_NV_DIGEST_CERTIFY_INFO
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct NVDigestCertifyInfo {
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub index_name: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub nv_digest: Vec<u8>,
 }
 
@@ -168,38 +168,38 @@ pub struct Attest {
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct AuthCommand {
     pub session_handle: AuthSession,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub nonce: Vec<u8>,
     pub session_attributes: SessionAttributes,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub hmac: Vec<u8>,
 }
 
 /// TPMS_AUTH_RESPONSE
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct AuthResponse {
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub nonce: Vec<u8>,
     pub session_attributes: SessionAttributes,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub hmac: Vec<u8>,
 }
 
 /// TPMS_DERIVE
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct Derive {
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub label: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub context: Vec<u8>,
 }
 
 /// TPMS_SENSITIVE_CREATE
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct SensitiveCreate {
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub user_auth: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub data: Vec<u8>,
 }
 
@@ -269,9 +269,9 @@ pub type SchemeKdf1Sp800_108 = SchemeHash;
 /// TPMS_ECC_POINT
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct EccPoint {
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub x: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub y: Vec<u8>,
 }
 
@@ -282,19 +282,19 @@ pub struct AlgortihmDetailECC {
     pub key_size: u16,
     pub kdf: KdfScheme,
     pub sign: EccScheme,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub p: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub a: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub b: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub g_x: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub g_y: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub n: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub h: Vec<u8>,
 }
 
@@ -302,7 +302,7 @@ pub struct AlgortihmDetailECC {
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct SignatureRSA {
     pub hash: AlgHash,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub sig: Vec<u8>,
 }
 
@@ -316,9 +316,9 @@ pub type SignatureRSAPSS = SignatureRSA;
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct SignatureECC {
     pub hash: AlgHash,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub signature_r: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub signature_s: Vec<u8>,
 }
 
@@ -365,9 +365,9 @@ pub struct ECCParams {
 /// TPMS_ID_OBJECT
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct IdObject {
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub integrity_hmac: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub enc_identity: Vec<u8>,
 }
 
@@ -384,7 +384,7 @@ pub struct NVPublic {
     pub nv_index: NVIndex,
     pub name_alg: AlgHash,
     pub attributes: NVAttributes,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub auth_policy: Vec<u8>,
     pub data_size: u16,
 }
@@ -392,9 +392,9 @@ pub struct NVPublic {
 /// TPMS_CONTEXT_DATA
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct ContextData {
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub integrity: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub encrypted: Vec<u8>,
 }
 
@@ -404,7 +404,7 @@ pub struct Context {
     pub sequence: u64,
     pub saved_handle: Saved,
     pub hierarchy: Hierarchy,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub context_blob: Vec<u8>,
 }
 
@@ -412,15 +412,15 @@ pub struct Context {
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct CreationData {
     pub pcr_select: PCRPropertyTag,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub digest: Vec<u8>,
     pub locality: LocalityAttributes,
     pub parent_name_alg: AlgHash,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub parent_name: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub parent_qualified_name: Vec<u8>,
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub outside_info: Vec<u8>,
 }
 

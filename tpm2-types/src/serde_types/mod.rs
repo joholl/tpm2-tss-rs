@@ -1,2 +1,2 @@
 pub mod big_array;
-pub mod de;
+pub mod sized_vector;

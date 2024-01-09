@@ -97,7 +97,7 @@ size, we have to explicitly specify which kind of size is needed.
 pub struct OuterStruct {
     // ...
     // together, this is TPM2B_NONCE
-    #[serde(deserialize_with = "deserialize_u16_sized_vec")]
+    #[serde(with = "U16SizedVector")]
     pub nonce: Vec<u8>,
     // ...
 }
@@ -125,14 +125,14 @@ single object.
 pub struct OuterStruct {
     // ...
     // TPM2B_SENSITIVE_CREATE
-    #[serde(deserialize_with = "deserialize_u16_sized_field")]
+    #[serde(with = "U16SizedVector")]
     pub user_auth: EccPoint,  // TPMS_ECC_POINT
     // ...
 }
 ```
 
-Via `deserialize_with`, we get rid of one level of indirection (the `TPM2B_`
-type).
+Via `#[serde(with = "U16SizedVector")]`, we get rid of one level of indirection
+(the `TPM2B_` type).
 
 Alternatively, one could try to implement a custom deserialize function for e.g.
 `EccPoint` (either explicitly or via custom derive macro). The problem with this
@@ -146,8 +146,7 @@ delegates to the `EccPoint` default implementation.
 ### Non-TPM2B Arrays
 
 All arrays with a count (`TPML_` and the PCR selection types) are handled just
-like byte arrays: with `deserialize_u8_sized_vec`, `deserialize_u16_sized_vec`,
-`deserialize_u32_sized_vec`.
+like byte arrays: with `U8SizedVector`, `U16SizedVector`, `U32SizedVector`.
 
 
 ### Statically-sized Arrays
