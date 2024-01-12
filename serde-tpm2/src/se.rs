@@ -1,11 +1,10 @@
-use serde::{ser, Serialize};
-use std::any;
-
 use crate::{
     error::{Error, Result},
     log::Logger,
 };
 use log;
+use serde::{ser, Serialize};
+use std::any;
 
 /// Starting point: https://serde.rs/impl-serializer.html
 pub struct Serializer {

@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+// TODO replace this with own Errors/Error Handling
+
 use serde::{de, ser};
 use std::fmt::{self, Display};
 
