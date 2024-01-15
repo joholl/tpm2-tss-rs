@@ -1,4 +1,4 @@
-mod handle_ranges;
+pub mod handle_ranges;
 
 use crate::{
     handles::handle_ranges::{

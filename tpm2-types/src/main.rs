@@ -2,6 +2,7 @@ pub mod alg;
 pub mod util;
 
 use crate::util::{from_hex, to_hex};
+use serde::Deserialize;
 use serde_tpm2::{de::from_bytes, se::to_bytes};
 use tpm2_types::selectables::EccScheme;
 use tpm2_types::{
@@ -65,34 +66,46 @@ use tpm2_types::{
 fn main() {
     env_logger::init();
 
-    let in_public = Public::ECC {
-        name_alg: AlgHash::SHA256,
-        object_attributes: 0x00020072,
-        auth_policy: [0xaa, 0xbb, 0xcc].to_vec(),
-        parameters: ECCParams {
-            symmetric: SymDefObject::Null,
-            scheme: EccScheme::ECDH(AlgHash::SHA256),
-            curve_id: EccCurve::NistP256,
-            kdf: KdfScheme::Null,
-        },
-        unique: EccPoint {
-            x: [].to_vec(),
-            y: [0xaa, 0xbb, 0xcc].to_vec(),
-        },
-    };
+    // let in_public = Public::ECC {
+    //     name_alg: AlgHash::SHA256,
+    //     object_attributes: 0x00020072,
+    //     auth_policy: [0xaa, 0xbb, 0xcc].to_vec(),
+    //     parameters: ECCParams {
+    //         symmetric: SymDefObject::Null,
+    //         scheme: EccScheme::ECDH(AlgHash::SHA256),
+    //         curve_id: EccCurve::NistP256,
+    //         kdf: KdfScheme::Null,
+    //     },
+    //     unique: EccPoint {
+    //         x: [].to_vec(),
+    //         y: [0xaa, 0xbb, 0xcc].to_vec(),
+    //     },
+    // };
 
-    println!("{:#?}", in_public);
+    // println!("{:#?}", in_public);
 
-    let serialized = to_bytes(&in_public).unwrap();
-    let serialized_hex = to_hex(&serialized);
-    println!("serialized_hex = {:?}", serialized_hex);
+    // let serialized = to_bytes(&in_public).unwrap();
+    // let serialized_hex = to_hex(&serialized);
+    // println!("serialized_hex = {:?}", serialized_hex);
 
-    let in_public_hex = "0023000b000200720003aabbcc00100019000b0003001000000003aabbcc";
-    println!("expected       = {:?}", in_public_hex);
-    assert_eq!(serialized_hex, in_public_hex);
+    // let in_public_hex = "0023000b000200720003aabbcc00100019000b0003001000000003aabbcc";
+    // println!("expected       = {:?}", in_public_hex);
+    // assert_eq!(serialized_hex, in_public_hex);
 
-    let serialized: Vec<u8> = from_hex(in_public_hex).unwrap();
-    let in_public_de: Public = from_bytes::<Public>(&serialized).unwrap();
-    println!("deserialized_hex = {:#?}", in_public_de);
-    assert_eq!(in_public_de, in_public);
+    // let serialized: Vec<u8> = from_hex(in_public_hex).unwrap();
+    // let in_public_de: Public = from_bytes::<Public>(&serialized).unwrap();
+    // println!("deserialized_hex = {:#?}", in_public_de);
+    // assert_eq!(in_public_de, in_public);
+
+    ////////////////////
+
+    use std::collections::BTreeMap;
+
+    assert_eq!(
+        from_bytes::<BTreeMap::<u8, u16>>(b"\x01\x11\x11\x02\x22\x22").unwrap(),
+        [(1, 0x1111), (2, 0x2222)]
+            .iter()
+            .cloned()
+            .collect::<BTreeMap<_, _>>()
+    );
 }

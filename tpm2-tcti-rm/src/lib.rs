@@ -4,9 +4,6 @@ pub mod rm;
 
 pub mod lib {
     use core::panic;
-    use std::collections::HashMap;
-
-    use log::warn;
     use tss2_tcti::define_api_symbols;
     use tss2_tcti::tcti::error::TctiError;
     use tss2_tcti::tcti::tcti::{Api, Info, State, Tcti, TctiLib};
