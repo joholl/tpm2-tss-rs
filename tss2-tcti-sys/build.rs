@@ -1,35 +1,45 @@
 extern crate bindgen;
+extern crate pkg_config;
 
 use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    let project_dir = env::current_dir().expect("Failed to retrieve current directory");
+    let tctildr_pkg = match pkg_config::Config::new().probe("tss2-tctildr") {
+        Ok(pkg) => pkg,
+        _ => panic!("pkg-config could not find tss2-tctildr"),
+    };
 
-    let bindings = bindgen::Builder::default()
-        .header(
-            //.join("../../../include/tss2/tss2_tcti.h")
-            "../../tpm2-tss/include/tss2/tss2_tcti.h",
+    for path in tctildr_pkg.link_paths {
+        println!("cargo:rustc-link-search={}", path.display());
+    }
+    for lib in &tctildr_pkg.libs {
+        println!("cargo:rustc-link-lib={}", lib);
+    }
+
+    println!("cargo:rerun-if-pkgconfig-changed=tss2-tctildr");
+
+    let include_path = tctildr_pkg
+        .include_paths
+        .iter()
+        .filter(|path| path.ends_with("include"))
+        .next()
+        .expect(&format!(
+            "No include path ends in 'include': {:#?}",
+            tctildr_pkg.include_paths,
+        ));
+
+    let bindings = bindgen::builder()
+        .header("tss2/tss2_tcti.h")
+        .header("tss2/tss2_common.h")
+        // TODO clang_args does not work unless the last header path is absolute
+        .header([include_path.to_str().unwrap(), "tss2/tss2_tctildr.h"].join("/"))
+        .clang_args(
+            tctildr_pkg
+                .include_paths
+                .iter()
+                .map(|path| format!("-I{}", path.to_string_lossy())),
         )
-        .header("../../tpm2-tss/include/tss2/tss2_common.h")
-        .header("../../tpm2-tss/include/tss2/tss2_tctildr.h")
-        .clang_args([
-            &format!(
-                "-I{}",
-                project_dir
-                    .join("../../tpm2-tss/src/tss2-tcti/.libs")
-                    .to_str()
-                    .unwrap()
-            ),
-            // format!(
-            //     "-L{}",
-            //     project_dir
-            //         .join("/home/johannes/persistent/dev-projects/tpm/tpm2-tss/src/tss2-tcti/.libs")
-            //         .to_str()
-            //         .unwrap()
-            // ),
-            // "-ltss2-tctildr".to_string(), // TODO not built? see https://github.com/parallaxsecond/rust-tss-esapi/blob/29b72787f8caa848727b05a9df3161ef2bf5918f/tss-esapi-sys/build.rs#L4
-        ])
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("Unable to generate rust bindings for TCTI C code");
@@ -39,15 +49,4 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
-
-    // TODO fix paths
-    //println!("cargo:rustc-link-search=../../src/tss2-tcti/.libs");
-    println!(
-        "cargo:rustc-link-search={}",
-        project_dir
-            .join("../../tpm2-tss/src/tss2-tcti/.libs")
-            .to_str()
-            .unwrap()
-    );
-    println!("cargo:rustc-link-lib=tss2-tctildr");
 }

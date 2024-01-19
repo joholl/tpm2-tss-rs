@@ -1,10 +1,6 @@
 name: Rust
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+on: [push]
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,7 +12,46 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install libtpms-dev
+      run: |
+        sudo apt -y update && \
+        sudo apt -y install libtpms-dev
+    - name: Install tpm2-tss
+      run: |
+        sudo apt -y update && \
+        sudo apt -y install build-essential git pkg-config gcc g++ m4 libtool automake libssl-dev autoconf autoconf-archive && \
+        mkdir tpm2-tss && \
+        cd tpm2-tss && \
+        git init && \
+        git remote add upstream https://github.com/tpm2-software/tpm2-tss.git && \
+        git fetch upstream e7bdf0dbae954d0dc730f19e81f2bf152f87a765 && \
+        git reset --hard FETCH_HEAD && \
+        ./bootstrap && \
+        ./configure \
+          --enable-tcti-libtpms \
+          --disable-unit \
+          --disable-esys \
+          --disable-fapi \
+          --disable-fapi-async-tests \
+          --disable-policy \
+          --disable-vendor \
+          --disable-util-io \
+          --disable-tcti-device \
+          --disable-tcti-mssim \
+          --disable-tcti-swtpm \
+          --disable-tcti-pcap \
+          --disable-tcti-cmd \
+          --disable-tcti-spi-helper \
+          --disable-tcti-spi-ltt2go \
+          --disable-tcti-spidev \
+          --disable-tcti-spi-ftdi \
+          --disable-tcti-i2c-helper \
+          --disable-tcti-i2c-ftdi \
+          --disable-tcti-fuzzing && \
+        make -j all && \
+        sudo make -j install && \
+        sudo ldconfig
     - name: Build
-      run: cargo build --verbose
+      run: cargo build -vv
     - name: Run tests
-      run: cargo test --verbose
+      run: TSS2_LOG=tcti+trace cargo test --verbose

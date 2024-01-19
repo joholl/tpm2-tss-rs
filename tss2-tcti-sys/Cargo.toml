@@ -8,6 +8,7 @@ edition = "2021"
 
 [build-dependencies]
 bindgen = "0.66.1"
+pkg-config = "0.3.29"
 
 [dependencies]
 
